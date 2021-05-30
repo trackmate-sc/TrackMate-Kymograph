@@ -134,8 +134,11 @@ public class KymographCreator implements OutputAlgorithm< ImagePlus >
 		final RandomAccess< T > ra = outimg.randomAccess( outimg );
 		for ( int y = 0; y < height; y++ )
 		{
-			ra.setPosition( y, 1 );
 			final double[][] intensities = lines.get( y );
+			if ( intensities == null )
+				continue;
+
+			ra.setPosition( y, 1 );
 			for ( int c = 0; c < nChannels; c++ )
 			{
 				ra.setPosition( c, 2 );
