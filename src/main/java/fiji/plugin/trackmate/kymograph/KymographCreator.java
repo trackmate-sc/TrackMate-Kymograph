@@ -1,0 +1,242 @@
+package fiji.plugin.trackmate.kymograph;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
+import org.scijava.util.DoubleArray;
+
+import fiji.plugin.trackmate.Model;
+import fiji.plugin.trackmate.Spot;
+import fiji.plugin.trackmate.util.TMUtils;
+import ij.CompositeImage;
+import ij.IJ;
+import ij.ImagePlus;
+import ij.process.LUT;
+import net.imagej.ImgPlus;
+import net.imglib2.Point;
+import net.imglib2.RandomAccess;
+import net.imglib2.algorithm.OutputAlgorithm;
+import net.imglib2.algorithm.region.BresenhamLine;
+import net.imglib2.img.Img;
+import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.type.NativeType;
+import net.imglib2.type.numeric.RealType;
+
+public class KymographCreator implements OutputAlgorithm< ImagePlus >
+{
+
+	private static final String BASE_ERROR_MESSAGE = "[KymographCreator] ";
+
+	private final Model model;
+
+	private final ImagePlus imp;
+
+	private final KymographCreationParams params;
+
+	private ImagePlus output;
+
+	private String errorMessage;
+
+	public KymographCreator( final Model model, final ImagePlus imp, final KymographCreationParams params )
+	{
+		this.model = model;
+		this.imp = imp;
+		this.params = params;
+	}
+
+	@Override
+	public boolean checkInput()
+	{
+		final boolean containsTrackID1 = model.getTrackModel().trackIDs( true ).contains( params.trackID1 );
+		if (!containsTrackID1)
+		{
+			errorMessage = BASE_ERROR_MESSAGE + "Model does not contain a track with ID " + params.trackID1;
+			return false;
+		}
+		final boolean containsTrackID2 = model.getTrackModel().trackIDs( true ).contains( params.trackID2 );
+		if ( !containsTrackID2 )
+		{
+			errorMessage = BASE_ERROR_MESSAGE + "Model does not contain a track with ID " + params.trackID2;
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public boolean process()
+	{
+		/*
+		 * Collect all the intensities.
+		 */
+
+		final int[] minmax = getMinMaxTimePoints( params.trackID1, params.trackID1 );
+		final List< double[][] > lines = new ArrayList<>( minmax[ 1 ] - minmax[ 0 ] + 1 );
+		for ( int tp = minmax[ 0 ]; tp <= minmax[ 1 ]; tp++ )
+		{
+			final double[][] intensities = collectIntensities( tp );
+			lines.add( intensities );
+		}
+
+		/*
+		 * Determine max width.
+		 */
+
+		final int width = lines.stream()
+				.filter( Objects::nonNull )
+				.mapToInt( l -> l[ 0 ].length )
+				.max().getAsInt();
+
+		/*
+		 * Prepare output.
+		 */
+		
+		final String outputName = String.format( "Kymograph %s -> %s of %s",
+				params.trackID1.toString(),
+				params.trackID2.toString(),
+				imp.getShortTitle() );
+		final int height = minmax[ 1 ] - minmax[ 0 ] + 1;
+		final int nChannels = imp.getNChannels();
+		final int nZSlices = 1 ;
+		final int nFrames = 1;
+		output = IJ.createHyperStack( outputName, width, height, nChannels, nZSlices, nFrames, imp.getBitDepth() );
+		output.getCalibration().pixelWidth = imp.getCalibration().pixelWidth;
+		output.getCalibration().setXUnit( imp.getCalibration().getUnit() );
+		output.getCalibration().pixelHeight = imp.getCalibration().frameInterval;
+		output.getCalibration().setYUnit( imp.getCalibration().getTimeUnit() );
+
+		if ( output instanceof CompositeImage )
+		{
+			final LUT[] luts = imp.getLuts();
+			( ( CompositeImage ) output ).setLuts( luts );
+		}
+
+		/*
+		 * Write into output image.
+		 */
+
+		writeInto( output, lines );
+
+		return true;
+	}
+
+	private < T extends RealType< T > & NativeType< T > > void writeInto( final ImagePlus target, final List< double[][] > lines )
+	{
+		final Img< T > outimg = ImageJFunctions.wrap( output );
+		final int width = ( int ) outimg.dimension( 0 );
+		final int height = ( int ) outimg.dimension( 1 );
+		final int nChannels = ( int ) outimg.dimension( 2 );
+
+		final RandomAccess< T > ra = outimg.randomAccess( outimg );
+		for ( int y = 0; y < height; y++ )
+		{
+			ra.setPosition( y, 1 );
+			final double[][] intensities = lines.get( y );
+			for ( int c = 0; c < nChannels; c++ )
+			{
+				ra.setPosition( c, 2 );
+				final double[] line = intensities[ c ];
+				final int offset = params.alignment.offset( line.length, width );
+				for ( int x = 0; x < line.length; x++ )
+				{
+					ra.setPosition( x + offset, 0 );
+					ra.get().setReal( line[ x ] );
+				}
+			}
+		}
+	}
+
+	/**
+	 * Returns <code>null</code> if one of the two tracks does not have a spot
+	 * in the specified time-point. Otherwise returns the intensity between the
+	 * two tracks at this time-point, as an array of <code>double</code> arrays,
+	 * with one element per channel.
+	 * 
+	 * @param tp
+	 *            the time-point.
+	 * @return a new <code>double[][]</code> array.
+	 */
+	private double[][] collectIntensities( final int tp )
+	{
+		final long[] coords1 = getCoords( tp, params.trackID1 );
+		final long[] coords2 = getCoords( tp, params.trackID2 );
+		if ( coords1 == null || coords2 == null )
+			return null;
+
+		final int nChannels = imp.getNChannels();
+		final double[][] intensities = new double[ nChannels ][];
+		for ( int c = 0; c < nChannels; c++ )
+			intensities[ c ] = getIntensity( coords1, coords2, c, tp );
+
+		return intensities;
+	}
+
+	private < T extends RealType< T > & NativeType< T > > double[] getIntensity( final long[] from, final long[] to, final int channel, final int timepoint )
+	{
+		@SuppressWarnings( "unchecked" )
+		final ImgPlus< T > img = TMUtils.rawWraps( imp );
+		final ImgPlus< T > current = TMUtils.hyperSlice( img, channel, timepoint );
+
+		final BresenhamLine< T > line = new BresenhamLine<>( current, Point.wrap( from ), Point.wrap( to ) );
+		final DoubleArray arr = new DoubleArray();
+		while ( line.hasNext() )
+			arr.addValue( line.next().getRealDouble() );
+
+		return arr.copyArray();
+	}
+
+	/**
+	 * Returns <code>null</code> if the specified track does not have a spot for
+	 * the specified time-point. Otherwise, returns the pixel coordinate of the
+	 * spot.
+	 * 
+	 * @param tp
+	 *            the time-point (0 based).
+	 * @param trackID
+	 *            the track ID.
+	 * @return a new <code>int[]</code> array with 3 elements (x, y, z).
+	 */
+	private long[] getCoords( final int tp, final Integer trackID )
+	{
+		final Set< Spot > spots = model.getTrackModel().trackSpots( trackID );
+		final Optional< Spot > opt = spots.stream().filter( s -> s.getFeature( Spot.FRAME ).intValue() == tp ).findFirst();
+		if ( !opt.isPresent() )
+			return null;
+
+		final Spot spot = opt.get();
+
+		final double[] calibration = TMUtils.getSpatialCalibration( imp );
+		final long[] coords = new long[ imp.getNSlices() > 1 ? 3 : 2 ];
+		for ( int d = 0; d < coords.length; d++ )
+			coords[ d ] = Math.round( spot.getDoublePosition( d ) / calibration[ d ] );
+
+		return coords;
+	}
+
+	private int[] getMinMaxTimePoints( final Integer trackID1, final Integer trackID2 )
+	{
+		final Set< Spot > spots1 = model.getTrackModel().trackSpots( trackID1 );
+		final int min1 = spots1.stream().mapToInt( s -> s.getFeature( Spot.FRAME ).intValue() ).min().getAsInt();
+		final int max1 = spots1.stream().mapToInt( s -> s.getFeature( Spot.FRAME ).intValue() ).max().getAsInt();
+
+		final Set< Spot > spots2 = model.getTrackModel().trackSpots( trackID1 );
+		final int min2 = spots2.stream().mapToInt( s -> s.getFeature( Spot.FRAME ).intValue() ).min().getAsInt();
+		final int max2 = spots2.stream().mapToInt( s -> s.getFeature( Spot.FRAME ).intValue() ).max().getAsInt();
+
+		return new int[] { Math.max( min1, min2 ), Math.min( max1, max2 ) };
+	}
+
+	@Override
+	public String getErrorMessage()
+	{
+		return errorMessage;
+	}
+
+	@Override
+	public ImagePlus getResult()
+	{
+		return output;
+	}
+}
