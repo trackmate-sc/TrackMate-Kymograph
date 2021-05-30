@@ -7,8 +7,8 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 import fiji.plugin.trackmate.Model;
 import fiji.plugin.trackmate.io.TmXmlReader;
-import fiji.plugin.trackmate.kymograph.ui.KymographCreatorController;
 import ij.ImageJ;
+import ij.ImagePlus;
 
 public class KymographCreatorTestDrive
 {
@@ -19,6 +19,16 @@ public class KymographCreatorTestDrive
 		ImageJ.main( args );
 		final String filePath = "../TrackMate/samples/MAX_Merged.xml";
 
+		final Integer trackID1 = 0;
+		final Integer trackID2 = 2;
+		final KymographCreationParams params = KymographCreationParams.create()
+				.trackID1( trackID1 )
+				.trackID2( trackID2 )
+				.thickness( 5 )
+				.alignment( KymographAlignment.FIRST )
+				.projectionMethod( KymographProjectionMethod.MIP )
+				.get();
+
 		final TmXmlReader reader = new TmXmlReader( new File( filePath ) );
 		if ( !reader.isReadingOk() )
 		{
@@ -27,7 +37,17 @@ public class KymographCreatorTestDrive
 		}
 
 		final Model model = reader.getModel();
-		final KymographCreatorController controller = new KymographCreatorController( model );
-		controller.showUI();
+		final ImagePlus imp = reader.readImage();
+		imp.show();
+
+		final KymographCreator creator = new KymographCreator( model, imp, params );
+		if ( !creator.checkInput() || !creator.process() )
+		{
+			System.out.println( creator.getErrorMessage() );
+			return;
+		}
+		final ImagePlus out = creator.getResult();
+		out.show();
+		System.out.println( "Finished!" );
 	}
 }
