@@ -19,4 +19,18 @@ public enum KymographAlignment
 	{
 		return name;
 	}
+
+	public int offset( final int length, final int width )
+	{
+		switch ( this )
+		{
+		default:
+		case FIRST:
+			return 0;
+		case CENTER:
+			return ( width - length ) / 2;
+		case SECOND:
+			return width - length;
+		}
+	}
 }
