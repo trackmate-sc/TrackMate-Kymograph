@@ -40,6 +40,8 @@ public class KymographCreatorPanel extends JPanel
 	{
 		cmbboxTrack1 = trackSelectorUI.create();
 		cmbboxTrack2 = trackSelectorUI.create();
+		if ( cmbboxTrack2.getModel().getSize() > 1 )
+			cmbboxTrack2.setSelectedIndex( 2 );
 		
 		final GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 0, 0 };
