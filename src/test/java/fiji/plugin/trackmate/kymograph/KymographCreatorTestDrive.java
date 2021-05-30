@@ -21,13 +21,6 @@ public class KymographCreatorTestDrive
 
 		final Integer trackID1 = 0;
 		final Integer trackID2 = 2;
-		final KymographCreationParams params = KymographCreationParams.create()
-				.trackID1( trackID1 )
-				.trackID2( trackID2 )
-				.thickness( 5 )
-				.alignment( KymographAlignment.FIRST )
-				.projectionMethod( KymographProjectionMethod.MIP )
-				.get();
 
 		final TmXmlReader reader = new TmXmlReader( new File( filePath ) );
 		if ( !reader.isReadingOk() )
@@ -40,14 +33,47 @@ public class KymographCreatorTestDrive
 		final ImagePlus imp = reader.readImage();
 		imp.show();
 
-		final KymographCreator creator = new KymographCreator( model, imp, params );
+		/*
+		 * Thin line.
+		 */
+
+		final KymographCreationParams params1 = KymographCreationParams.create()
+				.trackID1( trackID1 )
+				.trackID2( trackID2 )
+				.thickness( 1 )
+				.alignment( KymographAlignment.FIRST )
+				.projectionMethod( KymographProjectionMethod.MIP )
+				.get();
+		final KymographCreator creator = new KymographCreator( model, imp, params1 );
 		if ( !creator.checkInput() || !creator.process() )
 		{
 			System.out.println( creator.getErrorMessage() );
 			return;
 		}
-		final ImagePlus out = creator.getResult();
-		out.show();
+		final ImagePlus out1 = creator.getResult();
+		out1.show();
+
+		/*
+		 * Thick line.
+		 */
+
+		final KymographCreationParams params2 = KymographCreationParams.create()
+				.trackID1( trackID1 )
+				.trackID2( trackID2 )
+				.thickness( 10 )
+				.alignment( KymographAlignment.CENTER )
+				.projectionMethod( KymographProjectionMethod.MEAN )
+				.get();
+
+		creator.setParams( params2 );
+		if ( !creator.checkInput() || !creator.process() )
+		{
+			System.out.println( creator.getErrorMessage() );
+			return;
+		}
+		final ImagePlus out2 = creator.getResult();
+		out2.show();
+
 		System.out.println( "Finished!" );
 	}
 }
