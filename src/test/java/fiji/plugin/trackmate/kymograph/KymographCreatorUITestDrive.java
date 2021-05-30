@@ -9,6 +9,7 @@ import fiji.plugin.trackmate.Model;
 import fiji.plugin.trackmate.io.TmXmlReader;
 import fiji.plugin.trackmate.kymograph.ui.KymographCreatorController;
 import ij.ImageJ;
+import ij.ImagePlus;
 
 public class KymographCreatorUITestDrive
 {
@@ -27,7 +28,10 @@ public class KymographCreatorUITestDrive
 		}
 
 		final Model model = reader.getModel();
-		final KymographCreatorController controller = new KymographCreatorController( model );
+		final ImagePlus imp = reader.readImage();
+		imp.show();
+
+		final KymographCreatorController controller = new KymographCreatorController( model, imp );
 		controller.showUI();
 	}
 }

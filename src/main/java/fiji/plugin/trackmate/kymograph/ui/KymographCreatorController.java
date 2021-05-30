@@ -5,17 +5,22 @@ import javax.swing.JDialog;
 import fiji.plugin.trackmate.Model;
 import fiji.plugin.trackmate.gui.Icons;
 import fiji.plugin.trackmate.kymograph.KymographCreationParams;
+import fiji.plugin.trackmate.kymograph.KymographCreator;
+import ij.ImagePlus;
 
 public class KymographCreatorController
 {
 
-	private final Model model;
-
 	private JDialog dialog;
 
-	public KymographCreatorController( final Model model )
+	private final KymographCreator creator;
+
+	private final Model model;
+
+	public KymographCreatorController( final Model model, final ImagePlus imp )
 	{
 		this.model = model;
+		this.creator = new KymographCreator( model, imp, KymographCreationParams.create().get() );
 	}
 
 	public void showUI()
@@ -41,8 +46,15 @@ public class KymographCreatorController
 
 	private void create( final KymographCreationParams params )
 	{
-		System.out.println( params ); // DEBUG
-		// TODO Auto-generated method stub
+		model.getLogger().log( "Generating kymograph with the following parameters: " + params.toString() );
+		creator.setParams( params );
+		if ( !creator.checkInput() || !creator.process() )
+		{
+			model.getLogger().error( creator.getErrorMessage() );
+			return;
+		}
+		final ImagePlus out = creator.getResult();
+		out.show();
+		model.getLogger().log( "\nDone." );
 	}
-
 }
