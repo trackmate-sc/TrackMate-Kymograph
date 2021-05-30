@@ -36,7 +36,7 @@ public class KymographCreator implements OutputAlgorithm< ImagePlus >
 
 	private final ImagePlus imp;
 
-	private final KymographCreationParams params;
+	private KymographCreationParams params;
 
 	private ImagePlus output;
 
@@ -65,6 +65,11 @@ public class KymographCreator implements OutputAlgorithm< ImagePlus >
 			return false;
 		}
 		return true;
+	}
+
+	public void setParams( final KymographCreationParams params )
+	{
+		this.params = params;
 	}
 
 	@Override
