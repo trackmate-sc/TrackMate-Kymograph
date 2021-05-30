@@ -1,6 +1,7 @@
 package fiji.plugin.trackmate.kymograph;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -10,6 +11,7 @@ import org.scijava.util.DoubleArray;
 
 import fiji.plugin.trackmate.Model;
 import fiji.plugin.trackmate.Spot;
+import fiji.plugin.trackmate.kymograph.KymographProjectionMethod.Accumulator;
 import fiji.plugin.trackmate.util.TMUtils;
 import ij.CompositeImage;
 import ij.IJ;
@@ -168,17 +170,52 @@ public class KymographCreator implements OutputAlgorithm< ImagePlus >
 		final int nChannels = imp.getNChannels();
 		final double[][] intensities = new double[ nChannels ][];
 		for ( int c = 0; c < nChannels; c++ )
-			intensities[ c ] = getIntensity( coords1, coords2, c, tp );
+			intensities[ c ] = getProjectedIntensity( coords1, coords2, c, tp );
 
 		return intensities;
 	}
 
-	private < T extends RealType< T > & NativeType< T > > double[] getIntensity( final long[] from, final long[] to, final int channel, final int timepoint )
+	private < T extends RealType< T > & NativeType< T > > double[] getProjectedIntensity( final long[] from, final long[] to, final int channel, final int timepoint )
 	{
 		@SuppressWarnings( "unchecked" )
 		final ImgPlus< T > img = TMUtils.rawWraps( imp );
 		final ImgPlus< T > current = TMUtils.hyperSlice( img, channel, timepoint );
 
+		// Projection accumulator.
+		final Accumulator accumulator = params.projectionMethod.accumulator();
+		final double[] intensity = getIntensity( from, to, current );
+		accumulator.accumulate( intensity );
+
+		// Shift and accumulate intensities.
+		final int span = params.thickness / 2;
+		for ( int u = 1; u < span; u++ )
+		{
+			accumulator.accumulate( shiftAndGetIntensity( u, from, to, current ) );
+			accumulator.accumulate( shiftAndGetIntensity( -u, from, to, current ) );
+		}
+		return accumulator.get();
+	}
+
+	private < T extends RealType< T > & NativeType< T > > double[] shiftAndGetIntensity( final double shift, final long[] from, final long[] to, final ImgPlus< T > current )
+	{
+		// Orthogonal vector in XY plane (even if we have 3D data).
+		final double dx = to[ 0 ] - from[ 0 ];
+		final double dy = to[ 1 ] - from[ 1 ];
+		final double l = Math.sqrt( dx * dx + dy * dy );
+		final double ovx = -dy / l;
+		final double ovy = dx / l;
+
+		final long[] tmpFrom = Arrays.copyOf( from, from.length );
+		tmpFrom[ 0 ] = Math.round( shift * ovx + tmpFrom[ 0 ] );
+		tmpFrom[ 1 ] = Math.round( shift * ovy + tmpFrom[ 1 ] );
+		final long[] tmpTo = Arrays.copyOf( to, to.length );
+		tmpTo[ 0 ] = Math.round( shift * ovx + tmpTo[ 0 ] );
+		tmpTo[ 1 ] = Math.round( shift * ovy + tmpTo[ 1 ] );
+		return getIntensity( tmpFrom, tmpTo, current );
+	}
+
+	private < T extends RealType< T > & NativeType< T > > double[] getIntensity( final long[] from, final long[] to, final ImgPlus< T > current )
+	{
 		final BresenhamLine< T > line = new BresenhamLine<>( current, Point.wrap( from ), Point.wrap( to ) );
 		final DoubleArray arr = new DoubleArray();
 		while ( line.hasNext() )
