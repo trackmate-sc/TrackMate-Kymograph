@@ -64,6 +64,8 @@ public class KymographAction extends AbstractTMAction
 	public static class Factory implements TrackMateActionFactory
 	{
 
+		private final KymographAction action = new KymographAction();
+
 		@Override
 		public String getInfoText()
 		{
@@ -79,7 +81,7 @@ public class KymographAction extends AbstractTMAction
 		@Override
 		public TrackMateAction create()
 		{
-			return new KymographAction();
+			return action;
 		}
 
 		@Override
