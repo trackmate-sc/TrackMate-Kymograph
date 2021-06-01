@@ -13,7 +13,10 @@ public class TrackMateKymographActionTestDrive
 	{
 		UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
 		ImageJ.main( args );
-		final String filePath = "../TrackMate/samples/MAX_Merged.xml";
+//		final String filePath = "../TrackMate/samples/MAX_Merged.xml";
+		final String filePath = "samples/MAX_U251mitoREDlifeAct6703.xml";
 		new LoadTrackMatePlugIn().run( filePath );
+//		final String imgPath = "samples/MAX_U251 mitoRED lifeAct670 3.tif";
+//		new TrackMatePlugIn().run( imgPath );
 	}
 }
