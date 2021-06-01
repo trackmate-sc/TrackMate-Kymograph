@@ -1,7 +1,5 @@
 package fiji.plugin.trackmate.kymograph;
 
-import static fiji.plugin.trackmate.gui.Icons.TRACK_SCHEME_ICON_16x16;
-
 import java.awt.Frame;
 
 import javax.swing.ImageIcon;
@@ -13,6 +11,7 @@ import fiji.plugin.trackmate.TrackMate;
 import fiji.plugin.trackmate.action.AbstractTMAction;
 import fiji.plugin.trackmate.action.TrackMateAction;
 import fiji.plugin.trackmate.action.TrackMateActionFactory;
+import fiji.plugin.trackmate.gui.Icons;
 import fiji.plugin.trackmate.gui.displaysettings.DisplaySettings;
 import fiji.plugin.trackmate.kymograph.ui.KymographCreatorController;
 
@@ -87,7 +86,7 @@ public class KymographAction extends AbstractTMAction
 		@Override
 		public ImageIcon getIcon()
 		{
-			return TRACK_SCHEME_ICON_16x16;
+			return Icons.EDGE_ICON_16x16;
 		}
 
 		@Override
