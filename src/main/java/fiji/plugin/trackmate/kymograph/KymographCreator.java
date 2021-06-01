@@ -243,7 +243,7 @@ public class KymographCreator implements OutputAlgorithm< ImagePlus >
 	 *            the track ID.
 	 * @return a new <code>int[]</code> array with 3 elements (x, y, z).
 	 */
-	private long[] getCoords( final int tp, final Integer trackID )
+	public long[] getCoords( final int tp, final Integer trackID )
 	{
 		final Set< Spot > spots = model.getTrackModel().trackSpots( trackID );
 		final Optional< Spot > opt = spots.stream().filter( s -> s.getFeature( Spot.FRAME ).intValue() == tp ).findFirst();
