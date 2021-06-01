@@ -49,6 +49,7 @@ public class KymographCreatorController
 			dialog.pack();
 
 			panel.btnCreate.addActionListener( e -> create( panel.getKymographCreationParams() ) );
+			panel.btnClearOverlay.addActionListener( e -> clearOverlay() );
 		}
 		dialog.setVisible( true );
 	}
@@ -105,6 +106,7 @@ public class KymographCreatorController
 
 		for ( final Roi roi : toRemove )
 			overlay.remove( roi );
+		imp.updateAndDraw();
 	}
 
 	private void create( final KymographCreationParams params )

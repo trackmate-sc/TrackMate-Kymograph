@@ -15,6 +15,7 @@ import javax.swing.SwingConstants;
 
 import fiji.plugin.trackmate.gui.Fonts;
 import fiji.plugin.trackmate.gui.GuiUtils;
+import fiji.plugin.trackmate.gui.Icons;
 import fiji.plugin.trackmate.kymograph.KymographAlignment;
 import fiji.plugin.trackmate.kymograph.KymographCreationParams;
 import fiji.plugin.trackmate.kymograph.KymographProjectionMethod;
@@ -26,6 +27,8 @@ public class KymographCreatorPanel extends JPanel
 
 	final JButton btnCreate;
 
+	final JButton btnClearOverlay;
+
 	private final JComboBox< Integer > cmbboxTrack1;
 
 	private final JComboBox< Integer > cmbboxTrack2;
@@ -35,6 +38,7 @@ public class KymographCreatorPanel extends JPanel
 	private final JComboBox< KymographProjectionMethod > cmbboxProjection;
 
 	private final JComboBox< KymographAlignment > cmbboxAlignment;
+
 
 	public KymographCreatorPanel( final TrackSelectorUI trackSelectorUI )
 	{
@@ -51,6 +55,7 @@ public class KymographCreatorPanel extends JPanel
 		setLayout( gridBagLayout );
 
 		final JLabel lblTitle = new JLabel( "Kymograph creation" );
+		lblTitle.setIcon( Icons.EDGE_ICON_64x64 );
 		lblTitle.setFont( Fonts.BIG_FONT );
 		lblTitle.setHorizontalAlignment( SwingConstants.CENTER );
 		final GridBagConstraints gbcLblTitle = new GridBagConstraints();
@@ -144,6 +149,14 @@ public class KymographCreatorPanel extends JPanel
 		gbcCmbboxAlignment.gridx = 1;
 		gbcCmbboxAlignment.gridy = 5;
 		add( cmbboxAlignment, gbcCmbboxAlignment );
+
+		btnClearOverlay = new JButton( "Clear overlay" );
+		final GridBagConstraints gbcBtnClearOverlay = new GridBagConstraints();
+		gbcBtnClearOverlay.anchor = GridBagConstraints.SOUTHWEST;
+		gbcBtnClearOverlay.insets = new Insets( 5, 5, 5, 5 );
+		gbcBtnClearOverlay.gridx = 0;
+		gbcBtnClearOverlay.gridy = 6;
+		add( btnClearOverlay, gbcBtnClearOverlay );
 
 		btnCreate = new JButton( "Create" );
 		final GridBagConstraints gbcBtnCreate = new GridBagConstraints();
