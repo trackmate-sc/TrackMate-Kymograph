@@ -60,7 +60,7 @@ public class AStarTestDrive
 		final Path path2 = astar.search( start, end );
 		final long t2b = System.currentTimeMillis();
 		System.out.println( "Search completed in " + ( t2b - t2a ) + " ms." );
-		final ij.gui.PolygonRoi roi2 = KymographTracing.toRoi( path2 );
+		final ij.gui.PolygonRoi roi2 = KymographTracer.toRoi( path2 );
 		roi2.setStrokeColor( Color.GREEN );
 		imp.getOverlay().add( roi2 );
 		imp.updateAndDraw();

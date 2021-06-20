@@ -3,6 +3,7 @@ package fiji.plugin.trackmate.kymograph.tracing;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+import fiji.plugin.trackmate.kymograph.tracing.ui.KymographTracingController;
 import fiji.plugin.trackmate.util.TMUtils;
 import ij.IJ;
 import ij.ImageJ;
@@ -21,6 +22,6 @@ public class KymographTracingTestDrive
 		final ImagePlus imp = IJ.openImage( path );
 		imp.show();
 
-		new KymographTracingTool().run( "" );
+		new KymographTracingController( imp );
 	}
 }
