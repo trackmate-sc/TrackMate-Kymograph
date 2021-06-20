@@ -7,24 +7,18 @@ import static fiji.plugin.trackmate.kymograph.tracing.astar.AStarDirections.RIGH
 import static fiji.plugin.trackmate.kymograph.tracing.astar.AStarDirections.RIGHT_DOWN;
 
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.scijava.Context;
 
 import fiji.plugin.trackmate.kymograph.tracing.astar.AStar2D;
 import fiji.plugin.trackmate.kymograph.tracing.astar.AStarDirections;
 import fiji.plugin.trackmate.kymograph.tracing.astar.Path;
+import fiji.plugin.trackmate.kymograph.tracing.filter.Tubeness;
 import fiji.plugin.trackmate.util.TMUtils;
-import fiji.plugin.trackmate.visualization.GlasbeyLut;
 import ij.ImagePlus;
 import ij.gui.Overlay;
-import ij.gui.PointRoi;
 import ij.gui.PolygonRoi;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
-import net.imagej.ops.OpService;
 import net.imglib2.Localizable;
 import net.imglib2.Point;
 import net.imglib2.img.Img;
@@ -32,16 +26,14 @@ import net.imglib2.img.display.imagej.ImgPlusViews;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.DoubleType;
 
-public class KymographTracing
+public class KymographTracer
 {
 
 	private static final String PREVIEW_ROI_NAME = "KT_preview_segment";
 
-	private static final String POINT_ROI_NAME = "KT_knots";
-
-	private static final String SEGMENT_ROI_NAME = "KT_segments";
-
 	private final ImagePlus imp;
+
+	private final TracingParameters tracingParameters;
 
 	private boolean isTracing = false;
 
@@ -49,17 +41,22 @@ public class KymographTracing
 
 	private Point start;
 
-	private Color currentColor = GlasbeyLut.next();
-
 	private final AtomicInteger pathID = new AtomicInteger( 0 );
 
 	private final AtomicInteger segmentID = new AtomicInteger( 0 );
 
-	private List< Path > currentPath;
+	private int previousChannel = -1;
 
-	public KymographTracing( final ImagePlus imp )
+	private int previousZ = -1;
+
+	private int previousFrame = -1;
+
+	private double previousSigma = -1.;
+
+	public KymographTracer( final ImagePlus imp, final TracingParameters tracingParameters )
 	{
 		this.imp = imp;
+		this.tracingParameters = tracingParameters;
 		if ( null == imp.getOverlay() )
 			imp.setOverlay( new Overlay() );
 	}
@@ -69,54 +66,57 @@ public class KymographTracing
 		return isTracing;
 	}
 
-
 	public void startPath( final int x, final int y, final int channel, final int z, final int frame )
 	{
 		pathID.incrementAndGet();
 		isTracing = true;
-		currentPath = new ArrayList<>();
 
-		@SuppressWarnings( "rawtypes" )
-		final ImgPlus img = TMUtils.rawWraps( imp );
-		@SuppressWarnings( { "unchecked" } )
-		final Img< DoubleType > slice = prepare2Dslice( img, channel, z, frame );
-		
-		astar = new AStar2D<>( slice, slice );
-		// Consider all intensities.
-		astar.setThreshold( 0. );
-		// Forbid moving back in time.
-		astar.setDirections( AStarDirections.create()
-				.add( LEFT )
-				.add( LEFT_DOWN )
-				.add( DOWN )
-				.add( RIGHT_DOWN )
-				.add( RIGHT )
-				.get() );
+		/*
+		 * Recreate the astar and slice if we have moved to another slice or
+		 * changed the sigma value.
+		 */
+		if ( channel != previousChannel
+				|| z != previousZ
+				|| frame != previousFrame
+				|| tracingParameters.getSigma() != previousSigma )
+		{
+			@SuppressWarnings( "rawtypes" )
+			final ImgPlus img = TMUtils.rawWraps( imp );
+			@SuppressWarnings( { "unchecked" } )
+			final Img< DoubleType > filtered = filterSlice( img, channel, z, frame, tracingParameters.getSigma() );
 
-		currentColor = GlasbeyLut.next();
-		final PointRoi points = new PointRoi();
-		points.setStrokeColor( currentColor );
-		points.setPointType( PointRoi.CIRCLE );
-		imp.getOverlay().add( points, POINT_ROI_NAME + "_" + pathID.get() );
+			astar = new AStar2D<>( filtered, filtered );
+			// Forbid moving back in time.
+			astar.setDirections( AStarDirections.create()
+					.add( LEFT )
+					.add( LEFT_DOWN )
+					.add( DOWN )
+					.add( RIGHT_DOWN )
+					.add( RIGHT )
+					.get() );
 
+			previousChannel = channel;
+			previousZ = z;
+			previousFrame = frame;
+			previousSigma = tracingParameters.getSigma();
+		}
+		astar.setThreshold( tracingParameters.getThreshold() );
+		astar.setIntensityPenalty( tracingParameters.getPenalty() );
 		start = Point.wrap( new long[] { x, y } );
-		addToOverlay( start );
 	}
 
-	public void addSegment( final int x, final int y )
+	public Path addSegment( final int x, final int y )
 	{
 		if ( astar == null )
-			return;
+			return null;
 
 		final Path path = getPathTo( x, y );
 		if ( null == path )
-			return;
+			return null;
 
 		segmentID.incrementAndGet();
-		currentPath.add( path );
-		addToOverlay( path );
 		start = Point.wrap( new long[] { x, y } );
-		addToOverlay( start );
+		return path;
 	}
 
 	public void previewSegment( final int x, final int y )
@@ -134,12 +134,10 @@ public class KymographTracing
 		imp.getOverlay().add( roi, PREVIEW_ROI_NAME );
 	}
 
-	public List< Path > finishPath()
+	public void finishPath()
 	{
-		astar = null;
 		isTracing = false;
 		clearPreview();
-		return currentPath;
 	}
 
 	public void clearPreview()
@@ -163,26 +161,28 @@ public class KymographTracing
 		return path;
 	}
 
-	private void addToOverlay( final Path path )
+	static final ij.gui.PolygonRoi toRoi( final Path path )
 	{
-		if ( path.isEmpty() )
-			return;
-
-		final PolygonRoi roi = toRoi( path );
-		roi.setStrokeColor( currentColor );
-		imp.getOverlay().add( roi, SEGMENT_ROI_NAME + "_" + pathID.get() + "_" + segmentID.get() );
+		final int[] xpoints = new int[ path.size() ];
+		final int[] ypoints = new int[ path.size() ];
+		int i = 0;
+		for ( final Localizable point : path )
+		{
+			xpoints[ i ] = point.getIntPosition( 0 );
+			ypoints[ i ] = point.getIntPosition( 1 );
+			i++;
+		}
+		final PolygonRoi roi = new PolygonRoi( xpoints, ypoints, xpoints.length, ij.gui.PolygonRoi.POLYLINE );
+		roi.setUnscalableStrokeWidth( 1.5 );
+		return roi;
 	}
 
-	private void addToOverlay( final Localizable point )
-	{
-		final PointRoi roi = ( PointRoi ) imp.getOverlay().get( POINT_ROI_NAME + "_" + pathID.get() );
-		if ( roi == null )
-			return;
-
-		roi.addPoint( point.getDoublePosition( 0 ), point.getDoublePosition( 1 ) );
-	}
-
-	private static < T extends RealType< T > > Img< DoubleType > prepare2Dslice( final ImgPlus< T > img, final long channel, final long z, final long frame )
+	public static < T extends RealType< T > > Img< DoubleType > filterSlice(
+			final ImgPlus< T > img,
+			final long channel,
+			final long z,
+			final long frame,
+			final double sigma )
 	{
 		/*
 		 * Reslice to the right channel, z and frame.
@@ -237,31 +237,7 @@ public class KymographTracing
 		 * Tubeness filter.
 		 */
 
-		final Context context = TMUtils.getContext();
-		final OpService ops = context.getService( OpService.class );
-
-		final double scale = 2;
-		final double sigma = scale / Math.sqrt( 2 );
-
-		final Img< DoubleType > tubeness = ops.create().img( copy, new DoubleType() );
-		ops.filter().tubeness( tubeness, copy, sigma );
-
+		final Img< DoubleType > tubeness = Tubeness.tubeness2D( copy, sigma, Runtime.getRuntime().availableProcessors() / 2 + 1 );
 		return tubeness;
-	}
-
-	static final ij.gui.PolygonRoi toRoi( final Path path )
-	{
-		final int[] xpoints = new int[ path.size() ];
-		final int[] ypoints = new int[ path.size() ];
-		int i = 0;
-		for ( final Localizable point : path )
-		{
-			xpoints[ i ] = point.getIntPosition( 0 );
-			ypoints[ i ] = point.getIntPosition( 1 );
-			i++;
-		}
-		final PolygonRoi roi = new PolygonRoi( xpoints, ypoints, xpoints.length, ij.gui.PolygonRoi.POLYLINE );
-		roi.setUnscalableStrokeWidth( 1.5 );
-		return roi;
 	}
 }

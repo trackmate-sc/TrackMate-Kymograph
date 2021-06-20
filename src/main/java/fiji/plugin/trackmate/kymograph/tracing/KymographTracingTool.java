@@ -3,41 +3,44 @@ package fiji.plugin.trackmate.kymograph.tracing;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import fiji.plugin.trackmate.Logger;
+import fiji.plugin.trackmate.kymograph.tracing.Kymographs.Builder;
+import fiji.plugin.trackmate.kymograph.tracing.astar.Path;
 import fiji.tool.AbstractTool;
-import fiji.tool.ToolWithOptions;
 import ij.ImagePlus;
+import net.imglib2.Localizable;
 
-public class KymographTracingTool extends AbstractTool implements MouseListener, MouseMotionListener, ToolWithOptions
+public class KymographTracingTool extends AbstractTool implements MouseListener, MouseMotionListener
 {
 
-	private final Map< ImagePlus, KymographTracing > toolmap = new HashMap<>();
+	private static final String KYMOGRAPH_BASE_NAME = "Kymograph";
 
+	private static final String SEGMENT_BASE_NAME = "Segment";
 
-	private KymographTracing getTracer( final MouseEvent e )
+	private final AtomicInteger kymographId = new AtomicInteger( 0 );
+
+	private final AtomicInteger segmentId = new AtomicInteger( 0 );
+
+	private final Builder modelBuilder;
+
+	private Logger logger = Logger.VOID_LOGGER;
+
+	private final KymographTracer tracer;
+
+	public KymographTracingTool( final ImagePlus imp, final Kymographs model, final KymographTracer tracer )
 	{
-		final ImagePlus imp = getImagePlus( e );
-		if ( imp == null )
-			return null;
-		
-		KymographTracing tracer = toolmap.get( imp );
-		if ( null == tracer )
-		{
-			tracer = new KymographTracing( imp );
-			toolmap.put( imp, tracer );
-		}
-		return tracer;
+		super();
+		this.tracer = tracer;
+		this.modelBuilder = model.add();
+		run( null );
+		super.registerTool( imp );
 	}
 
 	@Override
 	public void mouseClicked( final MouseEvent e )
 	{
-		final KymographTracing tracer = getTracer( e );
-		if ( null == tracer )
-			return;
-
 		final int x = getOffscreenX( e );
 		final int y = getOffscreenY( e );
 
@@ -47,10 +50,17 @@ public class KymographTracingTool extends AbstractTool implements MouseListener,
 			{
 				tracer.finishPath();
 				tracer.getImp().updateAndDraw();
+				logger.log( "Finished kymograph." );
+				modelBuilder.done();
 				return;
 			}
 			
-			tracer.addSegment( x, y );
+			final Path segment = tracer.addSegment( x, y );
+			modelBuilder.segment( SEGMENT_BASE_NAME + "_" + kymographId.get() + "_" + segmentId.incrementAndGet() );
+			for ( final Localizable point : segment )
+				modelBuilder.point( point );
+			logger.log( "Added segment to kymograph." );
+
 			tracer.getImp().updateAndDraw();
 			return;
 		}
@@ -59,14 +69,16 @@ public class KymographTracingTool extends AbstractTool implements MouseListener,
 		final int channel = imp.getChannel() - 1;
 		final int z = imp.getSlice() - 1;
 		final int frame = imp.getFrame() - 1;
+		segmentId.set( 0 );
+		modelBuilder.kymograph( KYMOGRAPH_BASE_NAME + "_" + kymographId.incrementAndGet() );
+		logger.log( "Starting a new kymograph." );
 		tracer.startPath( x, y, channel, z, frame );
 	}
 
 	@Override
 	public void mouseMoved( final MouseEvent e )
 	{
-		final KymographTracing tracer = getTracer( e );
-		if ( null == tracer || !tracer.isTracing() )
+		if ( !tracer.isTracing() )
 			return;
 
 		if ( !e.isShiftDown() )
@@ -75,13 +87,26 @@ public class KymographTracingTool extends AbstractTool implements MouseListener,
 			tracer.getImp().updateAndDraw();
 			return;
 		}
-		
 
 		final int x = getOffscreenX( e );
 		final int y = getOffscreenY( e );
 		tracer.previewSegment( x, y );
 		tracer.getImp().updateAndDraw();
 	}
+
+	/**
+	 * Prevents registration on other images.
+	 */
+	@Override
+	protected void registerTool()
+	{}
+
+	/**
+	 * Prevents registration on other images.
+	 */
+	@Override
+	protected void registerTool( final ImagePlus image )
+	{}
 
 	@Override
 	public void mouseReleased( final MouseEvent e )
@@ -104,21 +129,23 @@ public class KymographTracingTool extends AbstractTool implements MouseListener,
 	{}
 
 	@Override
-	public void showOptionDialog()
-	{
-		System.out.println( "Show dialog" ); // DEBUG
-	}
-
-	@Override
 	public String getToolName()
 	{
-		return "Kymograph tracing";
+		return "Kymograph tracer";
 	}
 
 	@Override
 	public String getToolIcon()
 	{
-		return "C000Pdaa79796a6c4c2a1613215276998a6a70";
+		return "C493D4cD5cD6bD7aD8aDbaDcbDccCfffD5dCf22D38D39D46D47D55Dd6De7De8C16cD19D1aD1bD68D78D88D97Da6C"
+				+ "bcaD2dD3dD4dD6cD89Db9DbbDcaC26aD6eD7eD8eD9eDaeDbeDceDdeDeeCf66D37D48D63D82D83D92D93Db3C59"
+				+ "eD33D34D35D44D57D58D67D79D87D96Db5Db6Dc5Dd5De5CcdeD21D22D23D25D2cD32D3aD7dD8bD98Da5DadDc3"
+				+ "DcdDd4DedC7b7D3cD5bD7bD99D9aDa9DaaDdcCe45D56D64D73Da3Db4Dc4Dd7De9C37bD11D12D13D14D15D16D1"
+				+ "7D18CeddD28D2bD6aD74Da2Da4Dc6DeaC36bD1cD1dD1eD2eD3eD45D4eD5eCdaaD29D2aD54D65D72Da7DddDe6";
 	}
 
+	public void setLogger( final Logger logger )
+	{
+		this.logger = logger;
+	}
 }
