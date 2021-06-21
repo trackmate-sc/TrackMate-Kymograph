@@ -94,18 +94,19 @@ public class KymographTracingPanel extends JPanel
 
 		final JPanel panelBtns = new JPanel();
 		splitPane.setRightComponent( panelBtns );
-		final GridBagLayout gbl_panelBtns = new GridBagLayout();
-		gbl_panelBtns.columnWidths = new int[] { 0, 0 };
-		gbl_panelBtns.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-		gbl_panelBtns.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
-		gbl_panelBtns.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, Double.MIN_VALUE };
-		panelBtns.setLayout( gbl_panelBtns );
+		final GridBagLayout gblPanelBtns = new GridBagLayout();
+		gblPanelBtns.columnWidths = new int[] { 0, 0, 0 };
+		gblPanelBtns.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		gblPanelBtns.columnWeights = new double[] { 0.0, 1.0, Double.MIN_VALUE };
+		gblPanelBtns.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, Double.MIN_VALUE };
+		panelBtns.setLayout( gblPanelBtns );
 
 		final JLabel lblTitle = new JLabel( "Kymograph tracer" );
 		lblTitle.setFont( Fonts.BIG_FONT );
 		lblTitle.setHorizontalAlignment( SwingConstants.CENTER );
 		final GridBagConstraints gbcLblTitle = new GridBagConstraints();
-		gbcLblTitle.insets = new Insets( 5, 5, 5, 5 );
+		gbcLblTitle.gridwidth = 2;
+		gbcLblTitle.insets = new Insets( 5, 5, 5, 0 );
 		gbcLblTitle.fill = GridBagConstraints.BOTH;
 		gbcLblTitle.gridx = 0;
 		gbcLblTitle.gridy = 0;
@@ -115,24 +116,34 @@ public class KymographTracingPanel extends JPanel
 		lblFilterParams.setFont( lblFilterParams.getFont().deriveFont( lblFilterParams.getFont().getStyle() | Font.BOLD ) );
 		lblFilterParams.setHorizontalAlignment( SwingConstants.CENTER );
 		final GridBagConstraints gbcLblFilterParams = new GridBagConstraints();
+		gbcLblFilterParams.gridwidth = 2;
 		gbcLblFilterParams.anchor = GridBagConstraints.SOUTH;
-		gbcLblFilterParams.insets = new Insets( 5, 5, 5, 5 );
+		gbcLblFilterParams.insets = new Insets( 5, 5, 5, 0 );
 		gbcLblFilterParams.gridx = 0;
 		gbcLblFilterParams.gridy = 2;
 		panelBtns.add( lblFilterParams, gbcLblFilterParams );
+
+		final JLabel lblFilterSigma = new JLabel( "Filter scale" );
+		final GridBagConstraints gbcLblFilterSigma = new GridBagConstraints();
+		gbcLblFilterSigma.anchor = GridBagConstraints.EAST;
+		gbcLblFilterSigma.insets = new Insets( 0, 5, 5, 5 );
+		gbcLblFilterSigma.gridx = 0;
+		gbcLblFilterSigma.gridy = 3;
+		panelBtns.add( lblFilterSigma, gbcLblFilterSigma );
 
 		final SliderPanelDouble sigmaPanel = StyleElements.linkedSliderPanel( sigma, 4 );
 		final GridBagConstraints gbcSigma = new GridBagConstraints();
 		gbcSigma.fill = GridBagConstraints.HORIZONTAL;
 		gbcSigma.insets = new Insets( 5, 5, 5, 5 );
-		gbcSigma.gridx = 0;
+		gbcSigma.gridx = 1;
 		gbcSigma.gridy = 3;
 		panelBtns.add( sigmaPanel, gbcSigma );
 
 		btnPreview = new JButton( "Show filtered image", Icons.PREVIEW_ICON );
 		final GridBagConstraints gbc_btnNewButton = new GridBagConstraints();
+		gbc_btnNewButton.gridwidth = 2;
 		gbc_btnNewButton.anchor = GridBagConstraints.EAST;
-		gbc_btnNewButton.insets = new Insets( 5, 5, 5, 5 );
+		gbc_btnNewButton.insets = new Insets( 5, 5, 5, 0 );
 		gbc_btnNewButton.gridx = 0;
 		gbc_btnNewButton.gridy = 4;
 		panelBtns.add( btnPreview, gbc_btnNewButton );
@@ -141,26 +152,43 @@ public class KymographTracingPanel extends JPanel
 		lblTracingParams.setFont( lblTracingParams.getFont().deriveFont( lblTracingParams.getFont().getStyle() | Font.BOLD ) );
 		lblTracingParams.setHorizontalAlignment( SwingConstants.CENTER );
 		final GridBagConstraints gbcLblTracingParams = new GridBagConstraints();
+		gbcLblTracingParams.gridwidth = 2;
 		gbcLblTracingParams.anchor = GridBagConstraints.SOUTH;
 		gbcLblTracingParams.fill = GridBagConstraints.HORIZONTAL;
-		gbcLblTracingParams.insets = new Insets( 5, 5, 5, 5 );
+		gbcLblTracingParams.insets = new Insets( 5, 5, 5, 0 );
 		gbcLblTracingParams.gridx = 0;
 		gbcLblTracingParams.gridy = 5;
 		panelBtns.add( lblTracingParams, gbcLblTracingParams );
+
+		final JLabel lblThreshold = new JLabel( "Threshold" );
+		final GridBagConstraints gbcLblThreshold = new GridBagConstraints();
+		gbcLblThreshold.anchor = GridBagConstraints.EAST;
+		gbcLblThreshold.insets = new Insets( 0, 0, 5, 5 );
+		gbcLblThreshold.gridx = 0;
+		gbcLblThreshold.gridy = 6;
+		panelBtns.add( lblThreshold, gbcLblThreshold );
 
 		final SliderPanelDouble thresholdPanel = StyleElements.linkedSliderPanel( threshold, 4 );
 		final GridBagConstraints gbcTreshold = new GridBagConstraints();
 		gbcTreshold.fill = GridBagConstraints.HORIZONTAL;
 		gbcTreshold.insets = new Insets( 5, 5, 5, 5 );
-		gbcTreshold.gridx = 0;
+		gbcTreshold.gridx = 1;
 		gbcTreshold.gridy = 6;
 		panelBtns.add( thresholdPanel, gbcTreshold );
+
+		final JLabel lblPenalty = new JLabel( "Penalty" );
+		final GridBagConstraints gbcLblPenalty = new GridBagConstraints();
+		gbcLblPenalty.anchor = GridBagConstraints.EAST;
+		gbcLblPenalty.insets = new Insets( 0, 0, 5, 5 );
+		gbcLblPenalty.gridx = 0;
+		gbcLblPenalty.gridy = 7;
+		panelBtns.add( lblPenalty, gbcLblPenalty );
 
 		final SliderPanelDouble penaltyPanel = StyleElements.linkedSliderPanel( penaly, 5 );
 		final GridBagConstraints gbcPenalty = new GridBagConstraints();
 		gbcPenalty.fill = GridBagConstraints.HORIZONTAL;
 		gbcPenalty.insets = new Insets( 5, 5, 5, 5 );
-		gbcPenalty.gridx = 0;
+		gbcPenalty.gridx = 1;
 		gbcPenalty.gridy = 7;
 		panelBtns.add( penaltyPanel, gbcPenalty );
 
@@ -171,8 +199,10 @@ public class KymographTracingPanel extends JPanel
 		final JLabelLogger lblLog = new JLabelLogger();
 		lblLog.setText( " " );
 		this.logger = lblLog.getLogger();
+
 		final GridBagConstraints gbcLblLog = new GridBagConstraints();
-		gbcLblLog.insets = new Insets( 5, 5, 5, 5 );
+		gbcLblLog.gridwidth = 2;
+		gbcLblLog.insets = new Insets( 5, 5, 5, 0 );
 		gbcLblLog.fill = GridBagConstraints.BOTH;
 		gbcLblLog.gridx = 0;
 		gbcLblLog.gridy = 8;
@@ -184,9 +214,10 @@ public class KymographTracingPanel extends JPanel
 
 		final JPanel panel = new JPanel();
 		final GridBagConstraints gbcPanel = new GridBagConstraints();
+		gbcPanel.gridwidth = 2;
 		gbcPanel.anchor = GridBagConstraints.SOUTH;
 		gbcPanel.fill = GridBagConstraints.HORIZONTAL;
-		gbcPanel.insets = new Insets( 5, 5, 5, 5 );
+		gbcPanel.insets = new Insets( 5, 5, 0, 0 );
 		gbcPanel.gridx = 0;
 		gbcPanel.gridy = 9;
 		panelBtns.add( panel, gbcPanel );
