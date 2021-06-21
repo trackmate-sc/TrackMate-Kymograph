@@ -47,7 +47,7 @@ public class KymographTracingPanel extends JPanel
 
 	private final Logger logger;
 
-	final JButton btnLoad;
+//	final JButton btnLoad;
 
 	final JButton btnSave;
 
@@ -192,10 +192,10 @@ public class KymographTracingPanel extends JPanel
 		panelBtns.add( panel, gbcPanel );
 		panel.setLayout( new BoxLayout( panel, BoxLayout.X_AXIS ) );
 
-		btnLoad = new JButton( "Load" );
+//		btnLoad = new JButton( "Load" );
 		btnSave = new JButton( "Save", Icons.SAVE_ICON );
 
-		panel.add( btnLoad );
+//		panel.add( btnLoad );
 		panel.add( Box.createHorizontalGlue() );
 		panel.add( btnSave );
 
