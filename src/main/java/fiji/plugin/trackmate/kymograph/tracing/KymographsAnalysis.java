@@ -18,6 +18,7 @@ import javax.swing.ScrollPaneConstants;
 
 import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
+import org.apache.commons.math3.analysis.interpolation.LoessInterpolator;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.jfree.chart.ChartFactory;
@@ -57,6 +58,10 @@ public class KymographsAnalysis
 		final DefaultXYDataset velocityDataset = velocityDataset( kymographs, timeInterval );
 		final ExportableChartPanel velocityChart = chart( velocityDataset, timeUnits, "Velocity", spaceUnits + "/" + timeUnits );
 
+		// Smoorh velocity.
+		final DefaultXYDataset smoothVelocityDataset = smoothVelocityDataset( kymographs, timeInterval );
+		final ExportableChartPanel smoothVelocityChart = chart( smoothVelocityDataset, timeUnits, "Smoothed velocity", spaceUnits + "/" + timeUnits );
+
 		// The Panel.
 		final JPanel panel = new JPanel();
 		final BoxLayout panelLayout = new BoxLayout( panel, BoxLayout.Y_AXIS );
@@ -65,6 +70,8 @@ public class KymographsAnalysis
 		panel.add( positionChart );
 		panel.add( Box.createVerticalStrut( 5 ) );
 		panel.add( velocityChart );
+		panel.add( Box.createVerticalStrut( 5 ) );
+		panel.add( smoothVelocityChart );
 
 		// Scroll pane
 		final JScrollPane scrollPane = new JScrollPane();
@@ -101,6 +108,33 @@ public class KymographsAnalysis
 		return dataset;
 	}
 
+	private static DefaultXYDataset smoothVelocityDataset( final Kymographs kymographs, final double timeInterval )
+	{
+		final DefaultXYDataset dataset = new DefaultXYDataset();
+		for ( final Kymograph kymograph : kymographs )
+		{
+			final double[] timeMinMax = timeMinMax( kymograph );
+			final double min = timeMinMax[ 0 ];
+			final double max = timeMinMax[ 1 ];
+			final double[] x = ramp( min, max, timeInterval );
+			final double[] y = new double[ x.length ];
+			final PolynomialSplineFunction function = interpolate( kymograph, timeInterval );
+			for ( int i = 0; i < x.length; i++ )
+				y[ i ] = function.value( x[ i ] );
+
+			final LoessInterpolator smoothingInterpolator = new LoessInterpolator( 0.25, 0 );
+			final PolynomialSplineFunction smoothFunction = smoothingInterpolator.interpolate( x, y );
+
+			final UnivariateFunction derivative = smoothFunction.derivative();
+			final double[] ys = new double[ x.length ];
+			for ( int i = 0; i < x.length; i++ )
+				ys[ i ] = derivative.value( x[ i ] );
+
+			dataset.addSeries( kymograph.toString(), new double[][] { x, ys } );
+		}
+		return dataset;
+	}
+
 	private static final DefaultXYDataset positionDataset( final Kymographs kymographs, final double timeInterval )
 	{
 		final DefaultXYDataset dataset = new DefaultXYDataset();
@@ -132,7 +166,7 @@ public class KymographsAnalysis
 		// The chart.
 		final String title = "";
 		final String xAxisLabel = "Time (" + timeUnits + ")";
-		final String yAxisLabel = "Position (" + yUnits + ")";
+		final String yAxisLabel = ylabel + " (" + yUnits + ")";
 		final JFreeChart chart = ChartFactory.createXYLineChart(
 				title,
 				xAxisLabel,
