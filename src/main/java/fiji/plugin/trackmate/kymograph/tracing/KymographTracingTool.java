@@ -34,6 +34,7 @@ public class KymographTracingTool extends AbstractTool implements MouseListener,
 		super();
 		this.tracer = tracer;
 		this.modelBuilder = model.add();
+		kymographId.set( model.size() );
 		run( null );
 		super.registerTool( imp );
 	}
