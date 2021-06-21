@@ -24,17 +24,25 @@ public class Kymographs implements Iterable< Kymograph >
 
 	private final transient Listeners.List< SelectionListener > selectionListeners;
 
-	public Kymographs()
+	private final String name;
+
+	public Kymographs( final String name )
 	{
-		this( new ArrayList<>() );
+		this( name, new ArrayList<>() );
 	}
 
-	private Kymographs( final List< Kymograph > kymographs )
+	private Kymographs( final String name, final List< Kymograph > kymographs )
 	{
+		this.name = name;
 		this.kymographs = kymographs;
 		this.selection = new ArrayList<>();
 		this.updateListeners = new Listeners.SynchronizedList<>();
 		this.selectionListeners = new Listeners.SynchronizedList<>();
+	}
+
+	public int size()
+	{
+		return kymographs.size();
 	}
 
 	@Override
@@ -120,6 +128,12 @@ public class Kymographs implements Iterable< Kymograph >
 	public interface SelectionListener
 	{
 		public void kymographSelectionChanged();
+	}
+
+	@Override
+	public String toString()
+	{
+		return name;
 	}
 
 	public static final class Builder
@@ -208,6 +222,11 @@ public class Kymographs implements Iterable< Kymograph >
 		{
 			this.name = name;
 		}
+
+		public int size()
+		{
+			return segments.size();
+		}
 	}
 
 	public static class Segment implements Iterable< RealLocalizable >
@@ -237,6 +256,11 @@ public class Kymographs implements Iterable< Kymograph >
 		public void setName( final String name )
 		{
 			this.name = name;
+		}
+
+		public int size()
+		{
+			return points.size();
 		}
 	}
 }
