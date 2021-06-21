@@ -1,6 +1,9 @@
 package fiji.plugin.trackmate.kymograph.tracing;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.file.Files;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -31,10 +34,25 @@ public class KymographsIO
 		return getGson().fromJson( str, Kymographs.class );
 	}
 
+	public static final Kymographs load( final File jsonFile )
+	{
+		String str;
+		try
+		{
+			str = new String( Files.readAllBytes( jsonFile.toPath() ) );
+			return KymographsIO.fromJson( str );
+		}
+		catch ( final IOException e )
+		{
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 	private static Gson getGson()
 	{
 		final GsonBuilder builder = new GsonBuilder();
-		builder.registerTypeAdapter( KymographsSerializer.class, new KymographsSerializer() );
+		builder.registerTypeAdapter( Kymographs.class, new KymographsSerializer() );
 		return builder.setPrettyPrinting().create();
 	}
 
