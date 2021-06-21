@@ -4,6 +4,7 @@ import java.awt.Component;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import javax.swing.JFileChooser;
@@ -40,10 +41,12 @@ public class KymographTracingController
 	public KymographTracingController( final ImagePlus imp, final Kymographs kymographs )
 	{
 		assert imp != null;
+		fileChooser.setSelectedFile( proposeJsonFile( imp ) );
 
 		// Display overlay.
 		imp.setOverlay( new Overlay() );
 		imp.getOverlay().add( new KymographOverlay( kymographs, imp ) );
+		imp.updateAndDraw();
 
 		// Tracing parameters.
 		final TracingParameters tracingParameters = new TracingParameters();
@@ -66,35 +69,48 @@ public class KymographTracingController
 
 		// Wire some listeners.
 		panel.btnPreview.addActionListener( e -> SwingUtilities.invokeLater( () -> preview( imp, tracingParameters.getSigma() ) ) );
-		panel.btnSave.addActionListener( e -> save( proposeJsonFile( imp ), frame ) );
+		panel.btnSave.addActionListener( e -> save( kymographs, frame ) );
 	}
 
-	public static void load( final File kymographFile, final ImagePlus imp )
+	public static void load( final ImagePlus imp ) throws IOException
 	{
 		fileChooser.setFileFilter( new FileNameExtensionFilter( "JSon files:", ".json" ) );
-		fileChooser.setSelectedFile( kymographFile );
+		fileChooser.setSelectedFile( proposeJsonFile( imp ) );
 		fileChooser.setDialogTitle( "Load from a JSon file" );
 		final int returnVal = fileChooser.showOpenDialog( null );
 		if ( returnVal == JFileChooser.APPROVE_OPTION )
 		{
 			final File selectedFile = fileChooser.getSelectedFile();
+			load( selectedFile, imp );
+		}
+	}
+
+	public static void load( final File kymographFile, final ImagePlus imp ) throws IOException
+	{
+		final String str = new String( Files.readAllBytes( kymographFile.toPath() ) );
+		final Kymographs kymographs = KymographsIO.fromJson( str );
+		new KymographTracingController( imp, kymographs );
+	}
+
+	private void save( final Kymographs kymographs, final Component parent )
+	{
+		fileChooser.setFileFilter( new FileNameExtensionFilter( "JSon files:", ".json" ) );
+		fileChooser.setDialogTitle( "Save to a JSon file" );
+		final int returnVal = fileChooser.showSaveDialog( parent );
+		if ( returnVal == JFileChooser.APPROVE_OPTION )
+		{
+			final String json = KymographsIO.toJson( kymographs );
+			final byte[] strToBytes = json.getBytes();
+			final Path path = fileChooser.getSelectedFile().toPath();
 			try
 			{
-				final String str = new String( Files.readAllBytes( selectedFile.toPath() ) );
-				final Kymographs kymographs = KymographsIO.fromJson( str );
-				new KymographTracingController( imp, kymographs );
+				Files.write( path, strToBytes );
 			}
 			catch ( final IOException e )
 			{
 				e.printStackTrace();
 			}
 		}
-	}
-
-	private void save( final File file, final Component parent )
-	{
-		// TODO Auto-generated method stub
-		System.out.println( "TODO save" ); // DEBUG
 	}
 
 	private void preview( final ImagePlus imp, final double sigma )
