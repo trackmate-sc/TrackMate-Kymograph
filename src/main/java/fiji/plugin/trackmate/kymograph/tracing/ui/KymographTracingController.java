@@ -18,6 +18,7 @@ import fiji.plugin.trackmate.kymograph.tracing.KymographOverlay;
 import fiji.plugin.trackmate.kymograph.tracing.KymographTracer;
 import fiji.plugin.trackmate.kymograph.tracing.KymographTracingTool;
 import fiji.plugin.trackmate.kymograph.tracing.Kymographs;
+import fiji.plugin.trackmate.kymograph.tracing.KymographsAnalysis;
 import fiji.plugin.trackmate.kymograph.tracing.KymographsIO;
 import fiji.plugin.trackmate.kymograph.tracing.TracingParameters;
 import fiji.plugin.trackmate.util.TMUtils;
@@ -32,6 +33,8 @@ public class KymographTracingController
 {
 
 	private static JFileChooser fileChooser = new JFileChooser();
+
+	private final KymographTracingPanel gui;
 
 	public KymographTracingController( final ImagePlus imp )
 	{
@@ -55,21 +58,29 @@ public class KymographTracingController
 		final KymographTracer tracer = new KymographTracer( imp, tracingParameters );
 
 		// UI.
-		final KymographTracingPanel panel = new KymographTracingPanel( kymographs, tracingParameters );
+		gui = new KymographTracingPanel( kymographs, tracingParameters );
 		final JFrame frame = new JFrame( "Kymographs of " + imp.getShortTitle() );
 		frame.setIconImage( Icons.TRACKMATE_ICON.getImage() );
-		frame.getContentPane().add( panel );
+		frame.getContentPane().add( gui );
 		frame.setSize( 400, 400 );
 		GuiUtils.positionWindow( frame, imp.getWindow() );
 		frame.setVisible( true );
 
 		// Tracking tool.
 		final KymographTracingTool tool = new KymographTracingTool( imp, kymographs, tracer );
-		tool.setLogger( panel.getLogger() );
+		tool.setLogger( gui.getLogger() );
 
 		// Wire some listeners.
-		panel.btnPreview.addActionListener( e -> SwingUtilities.invokeLater( () -> preview( imp, tracingParameters.getSigma() ) ) );
-		panel.btnSave.addActionListener( e -> save( kymographs, frame ) );
+		gui.btnPreview.addActionListener( e -> SwingUtilities.invokeLater( () -> preview( imp, tracingParameters.getSigma() ) ) );
+		gui.btnSave.addActionListener( e -> save( kymographs, frame ) );
+		gui.btnAnalyze.addActionListener( e -> analyze( kymographs ) );
+	}
+
+	private void analyze( final Kymographs kymographs )
+	{
+		final JFrame frame = KymographsAnalysis.plot( kymographs );
+		GuiUtils.positionWindow( frame, SwingUtilities.getWindowAncestor( gui ) );
+		frame.setVisible( true );
 	}
 
 	public static void load( final ImagePlus imp ) throws IOException
