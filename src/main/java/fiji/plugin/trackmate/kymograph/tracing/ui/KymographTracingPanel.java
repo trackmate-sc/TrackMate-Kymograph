@@ -140,13 +140,13 @@ public class KymographTracingPanel extends JPanel
 		panelBtns.add( sigmaPanel, gbcSigma );
 
 		btnPreview = new JButton( "Show filtered image", Icons.PREVIEW_ICON );
-		final GridBagConstraints gbc_btnNewButton = new GridBagConstraints();
-		gbc_btnNewButton.gridwidth = 2;
-		gbc_btnNewButton.anchor = GridBagConstraints.EAST;
-		gbc_btnNewButton.insets = new Insets( 5, 5, 5, 0 );
-		gbc_btnNewButton.gridx = 0;
-		gbc_btnNewButton.gridy = 4;
-		panelBtns.add( btnPreview, gbc_btnNewButton );
+		final GridBagConstraints gbcBtnPreview = new GridBagConstraints();
+		gbcBtnPreview.gridwidth = 2;
+		gbcBtnPreview.anchor = GridBagConstraints.EAST;
+		gbcBtnPreview.insets = new Insets( 5, 5, 5, 0 );
+		gbcBtnPreview.gridx = 0;
+		gbcBtnPreview.gridy = 4;
+		panelBtns.add( btnPreview, gbcBtnPreview );
 
 		final JLabel lblTracingParams = new JLabel( "Tracing parameters" );
 		lblTracingParams.setFont( lblTracingParams.getFont().deriveFont( lblTracingParams.getFont().getStyle() | Font.BOLD ) );
