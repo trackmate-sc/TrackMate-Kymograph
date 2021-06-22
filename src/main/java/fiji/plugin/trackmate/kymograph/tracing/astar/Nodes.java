@@ -8,12 +8,21 @@ import static fiji.plugin.trackmate.kymograph.tracing.astar.Node.toNode;
 
 import java.util.Arrays;
 
+/**
+ * Stores a collection of node as a heap.
+ */
 class Nodes
 {
 	Grid map;
 
+	/**
+	 * The nodes in a heap data structure, implemented in an array. Auto-resize.
+	 */
 	private long[] nodes;
 
+	/**
+	 * Size of the heap.
+	 */
 	private int size;
 
 	Nodes()
@@ -50,16 +59,16 @@ class Nodes
 		return r;
 	}
 
-	long getOpenNode( final int i )
+	long getOpenNode( final int nodeIndex )
 	{
-		assert i >= 0 && i < size;
-		return nodes[ i ];
+		assert nodeIndex >= 0 && nodeIndex < size;
+		return nodes[ nodeIndex ];
 	}
 
-	void openNodeParentChanged( final long n, final int idx, final int pd )
+	void openNodeParentChanged( final long node, final int idx, final int parentDirection )
 	{
-		siftUp( idx, n );
-		map.nodeParentDirectionUpdate( getX( n ), getY( n ), pd );
+		siftUp( idx, node );
+		map.nodeParentDirectionUpdate( getX( node ), getY( node ), parentDirection );
 	}
 
 	void clear()
@@ -69,16 +78,16 @@ class Nodes
 		map = null;
 	}
 
-	boolean isClean()
+	boolean isEmpty()
 	{
 		return size == 0;
 	}
 
 	private static final int HEAP_SHIFT = 2;
 
-	private void siftUp( int i, final long n )
+	private void siftUp( int i, final long node )
 	{
-		final int nf = getF( n );
+		final int nf = getF( node );
 		while ( i > 0 )
 		{
 			final int pi = ( i - 1 ) >>> HEAP_SHIFT;
@@ -89,15 +98,14 @@ class Nodes
 			setNode( i, p );
 			i = pi;
 		}
-		setNode( i, n );
+		setNode( i, node );
 	}
 
-	private void siftDown( int i, final long n )
+	private void siftDown( int i, final long node )
 	{
-		final int nf = getF( n );
+		final int nf = getF( node );
 		while ( i < size )
 		{
-			// 找children中最小的
 			int ci = ( i << HEAP_SHIFT ) + 1;
 			if ( ci >= size )
 				break;
@@ -129,19 +137,36 @@ class Nodes
 			setNode( i, c );
 			i = ci;
 		}
-		setNode( i, n );
+		setNode( i, node );
 	}
 
-	private void setNode( final int i, final long n )
+	private void setNode( final int nodeIndex, final long node )
 	{
-		nodes[ i ] = n;
-		map.openNodeIdxUpdate( getX( n ), getY( n ), i );
+		nodes[ nodeIndex ] = node;
+		map.openNodeIdxUpdate( getX( node ), getY( node ), nodeIndex );
 	}
 
-	private long node( final int x, final int y, final int g, final int h, final int pd )
+	/**
+	 * Creates a new node.
+	 * 
+	 * @param x
+	 *            the node X position.
+	 * @param y
+	 *            the node Y position.
+	 * @param g
+	 *            the G cost: cost of the path that leads to this node from the
+	 *            start.
+	 * @param h
+	 *            the H cost: heuristics estimating the cost from this node to
+	 *            the end.
+	 * @param parentDirection
+	 *            this direction from this node to its parent.
+	 * @return a new node.
+	 */
+	private long node( final int x, final int y, final int g, final int h, final int parentDirection )
 	{
 		final long node = toNode( x, y, g, g + h );
-		map.nodeParentDirectionUpdate( x, y, pd );
+		map.nodeParentDirectionUpdate( x, y, parentDirection );
 		return node;
 	}
 

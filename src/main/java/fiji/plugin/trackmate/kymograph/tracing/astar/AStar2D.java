@@ -10,7 +10,6 @@ import static fiji.plugin.trackmate.kymograph.tracing.astar.Grid.DIRECTION_RIGHT
 import static fiji.plugin.trackmate.kymograph.tracing.astar.Grid.DIRECTION_UP;
 import static fiji.plugin.trackmate.kymograph.tracing.astar.Grid.isClosedNode;
 import static fiji.plugin.trackmate.kymograph.tracing.astar.Grid.isNullNode;
-import static fiji.plugin.trackmate.kymograph.tracing.astar.Grid.isUnwalkable;
 import static fiji.plugin.trackmate.kymograph.tracing.astar.Grid.openNodeIdx;
 import static fiji.plugin.trackmate.kymograph.tracing.astar.Node.getF;
 import static fiji.plugin.trackmate.kymograph.tracing.astar.Node.getG;
@@ -123,12 +122,6 @@ public class AStar2D< T extends RealType< T > >
 	{
 		assert isClean( map );
 		path.clear();
-
-		if ( !map.isWalkable( start.getIntPosition( 0 ), start.getIntPosition( 1 ) ) )
-			return;
-
-		if ( !map.isWalkable( target.getIntPosition( 0 ), target.getIntPosition( 1 ) ) )
-			return;
 
 		if ( Localizables.equals( start, target ) )
 			return;
@@ -251,22 +244,6 @@ public class AStar2D< T extends RealType< T > >
 	{
 		final int info = map.info( x, y );
 
-		if ( isUnwalkable( info ) )
-			return;
-
-		switch ( pd )
-		{
-		case DIRECTION_RIGHT_DOWN:
-			if ( !map.isWalkable( x + 1, y ) )
-				return;
-			break;
-
-		case DIRECTION_LEFT_UP:
-			if ( !map.isWalkable( x, y + 1 ) )
-				return;
-			break;
-		}
-
 		if ( isNullNode( info ) )
 		{
 			final int hcost = heuristics.cost( net.imglib2.Point.wrap( new long[] { x, y } ), net.imglib2.Point.wrap( new long[] { ex, ey } ) );
@@ -373,6 +350,6 @@ public class AStar2D< T extends RealType< T > >
 
 	private boolean isClean( final Grid map )
 	{
-		return nodes.isClean() && map.isClean();
+		return nodes.isEmpty() && map.isClean();
 	}
 }

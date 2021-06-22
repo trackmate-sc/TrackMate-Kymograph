@@ -69,11 +69,6 @@ public class Grid
 		return grid[ x ][ y ] & ( WALKABLE_SHIFT_MASK | NODE_MASK );
 	}
 
-	static boolean isUnwalkable( final int info )
-	{
-		return ( info & WALKABLE_SHIFT_MASK ) != 0;
-	}
-
 	static boolean isNullNode( final int info )
 	{
 		return info == NODE_NULL;
@@ -148,32 +143,5 @@ public class Grid
 					return false;
 
 		return true;
-	}
-
-	public void setWalkable( final int x, final int y, final boolean flag )
-	{
-		if ( flag )
-			grid[ x ][ y ] &= ~WALKABLE_SHIFT_MASK;
-		else
-			grid[ x ][ y ] |= WALKABLE_SHIFT_MASK;
-	}
-
-	public boolean isWalkable( final int x, final int y )
-	{
-		if ( x < 0 || x >= width )
-			return false;
-		if ( y < 0 || y >= height )
-			return false;
-		return ( grid[ x ][ y ] & WALKABLE_SHIFT_MASK ) == 0;
-	}
-
-	public int getWidth()
-	{
-		return width;
-	}
-
-	public int getHeight()
-	{
-		return height;
 	}
 }
