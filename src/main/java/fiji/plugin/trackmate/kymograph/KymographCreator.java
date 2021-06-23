@@ -139,6 +139,7 @@ public class KymographCreator implements OutputAlgorithm< ImagePlus >
 		{
 			final LUT[] luts = imp.getLuts();
 			( ( CompositeImage ) output ).setLuts( luts );
+			( ( CompositeImage ) output ).setDisplayMode( CompositeImage.GRAYSCALE );
 		}
 
 		/*
