@@ -39,7 +39,7 @@ public class KymographCreatorUITestDrive
 	{
 		UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
 		ImageJ.main( args );
-		final String filePath = "../TrackMate/samples/MAX_Merged.xml";
+		final String filePath = "samples/U251_mitoRED_lifeAct670_3-MIP.xml";
 
 		final TmXmlReader reader = new TmXmlReader( new File( filePath ) );
 		if ( !reader.isReadingOk() )
