@@ -52,25 +52,63 @@ public class KymographsAnalysis
 		return plot( kymographs, guessTimeInterval( kymographs ) );
 	}
 
-	private static double guessTimeInterval( final Kymographs kymographs )
+	public static double guessTimeInterval( final Kymographs kymographs )
+	{
+		return guessInterval( kymographs, 0 );
+	}
+
+	public static double guessSpaceInterval( final Kymographs kymographs )
+	{
+		return guessInterval( kymographs, 1 );
+	}
+
+	private static double guessInterval( final Kymographs kymographs, final int dim )
 	{
 		final Median median = new Median();
 		final DoubleArray arr = new DoubleArray();
 
-		double previousT = Double.NaN;
+		double previousX = Double.NaN;
 		for ( final Kymograph kymograph : kymographs )
 			for ( final Segment segment : kymograph )
 				for ( final RealLocalizable point : segment )
 				{
-					final double t = point.getDoublePosition( 0 );
-					if ( !Double.isNaN( previousT ) )
+					final double x = point.getDoublePosition( dim );
+					if ( !Double.isNaN( previousX ) )
 					{
-						final double dt = Math.abs( t - previousT );
-						arr.addValue( dt );
+						final double dx = Math.abs( x - previousX );
+						if ( x > 0. )
+							arr.addValue( dx );
 					}
-					previousT = t;
+					previousX = x;
 				}
 		return median.evaluate( arr.copyArray() );
+	}
+
+	public static final double[] timeMinMax( final Kymographs kymographs )
+	{
+		return minMax( kymographs, 0 );
+	}
+
+	public static final double[] positionMinMax( final Kymographs kymographs )
+	{
+		return minMax( kymographs, 1 );
+	}
+
+	private static final double[] minMax( final Kymographs kymographs, final int dim )
+	{
+		double min = Double.POSITIVE_INFINITY;
+		double max = Double.NEGATIVE_INFINITY;
+		for ( final Kymograph kymograph : kymographs )
+			for ( final Segment segment : kymograph )
+				for ( final RealLocalizable point : segment )
+				{
+					final double x = point.getDoublePosition( dim );
+					if ( x > max )
+						max = x;
+					if ( x < min )
+						min = x;
+				}
+		return new double[] { min, max };
 	}
 
 	public static final JFrame plot( final Kymographs kymographs, final double timeInterval )
