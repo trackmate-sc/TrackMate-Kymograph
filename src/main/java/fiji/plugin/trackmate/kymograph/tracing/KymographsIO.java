@@ -77,18 +77,17 @@ public class KymographsIO
 				final JsonArray segmentsEl = new JsonArray( kymograph.size() );
 				for ( final Segment segment : kymograph )
 				{
-					final JsonObject segmentEl = new JsonObject();
-					segmentEl.addProperty( "name", segment.toString() );
-
-					final JsonArray pointArrayEl = new JsonArray( segment.size() );
+					final JsonArray timeArrayEl = new JsonArray( segment.size() );
+					final JsonArray positionArrayEl = new JsonArray( segment.size() );
 					for ( final RealLocalizable point : segment )
 					{
-						final JsonArray pointEl = new JsonArray( 2 );
-						pointEl.add( Double.valueOf( point.getDoublePosition( 0 ) ) );
-						pointEl.add( Double.valueOf( point.getDoublePosition( 1 ) ) );
-						pointArrayEl.add( pointEl );
+						timeArrayEl.add( Double.valueOf( point.getDoublePosition( 0 ) ) );
+						positionArrayEl.add( Double.valueOf( point.getDoublePosition( 1 ) ) );
 					}
-					segmentEl.add( "points", pointArrayEl );
+					final JsonObject segmentEl = new JsonObject();
+					segmentEl.addProperty( "name", segment.toString() );
+					segmentEl.add( "time", timeArrayEl );
+					segmentEl.add( "position", positionArrayEl );
 					segmentsEl.add( segmentEl );
 				}
 				kymEl.add( "segments", segmentsEl );
@@ -121,13 +120,14 @@ public class KymographsIO
 				{
 					final JsonObject segmentEl = ( JsonObject ) elb;
 					final String segmentName = segmentEl.get( "name" ).getAsString();
+					final JsonArray timeArrayEl = segmentEl.getAsJsonArray( "time" );
+					final JsonArray positionArrayEl = segmentEl.getAsJsonArray( "position" );
 					builder.segment( segmentName );
-
-					final JsonArray pointArrayEl = ( JsonArray ) segmentEl.get( "points" );
-					for ( final JsonElement elc : pointArrayEl )
+					for ( int i = 0; i < timeArrayEl.size(); i++ )
 					{
-						final JsonArray pointEl = ( JsonArray ) elc;
-						builder.point( pointEl.get( 0 ).getAsDouble(), pointEl.get( 1 ).getAsDouble() );
+						final double time = timeArrayEl.get( i ).getAsDouble();
+						final double position = positionArrayEl.get( i ).getAsDouble();
+						builder.point( time, position );
 					}
 				}
 			}
