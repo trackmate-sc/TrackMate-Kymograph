@@ -30,6 +30,7 @@ import fiji.plugin.trackmate.Model;
 import fiji.plugin.trackmate.gui.Icons;
 import fiji.plugin.trackmate.kymograph.KymographCreationParams;
 import fiji.plugin.trackmate.kymograph.KymographCreator;
+import fiji.plugin.trackmate.kymograph.tracing.ui.KymographTracingController;
 import ij.ImagePlus;
 import ij.gui.Overlay;
 import ij.gui.Roi;
@@ -141,6 +142,9 @@ public class KymographCreatorController
 		}
 		final ImagePlus out = creator.getResult();
 		out.show();
+
+		// Launch tracing controller.
+		new KymographTracingController( out );
 
 		addKymographOverlay( params );
 
