@@ -26,14 +26,20 @@ public class Kymographs implements Iterable< Kymograph >
 
 	private final String name;
 
-	public Kymographs( final String name )
+	private final String spaceUnits;
+
+	private final String timeUnits;
+
+	public Kymographs( final String name, final String spaceUnits, final String timeUnits )
 	{
-		this( name, new ArrayList<>() );
+		this( name, spaceUnits, timeUnits, new ArrayList<>() );
 	}
 
-	private Kymographs( final String name, final List< Kymograph > kymographs )
+	private Kymographs( final String name, final String spaceUnits, final String timeUnits, final List< Kymograph > kymographs )
 	{
 		this.name = name;
+		this.spaceUnits = spaceUnits;
+		this.timeUnits = timeUnits;
 		this.kymographs = kymographs;
 		this.selection = new ArrayList<>();
 		this.updateListeners = new Listeners.SynchronizedList<>();
@@ -43,6 +49,16 @@ public class Kymographs implements Iterable< Kymograph >
 	public int size()
 	{
 		return kymographs.size();
+	}
+
+	public String getSpaceUnits()
+	{
+		return spaceUnits;
+	}
+
+	public String getTimeUnits()
+	{
+		return timeUnits;
 	}
 
 	@Override
@@ -174,12 +190,12 @@ public class Kymographs implements Iterable< Kymograph >
 			return point( point.getDoublePosition( 0 ), point.getDoublePosition( 1 ) );
 		}
 
-		public Builder point( final double x, final double y )
+		public Builder point( final double time, final double position )
 		{
 			if ( currentSegment == null )
 				throw new IllegalArgumentException( "Please create a new segment before adding points." );
 
-			currentSegment.points.add( RealPoint.wrap( new double[] { x, y } ) );
+			currentSegment.points.add( RealPoint.wrap( new double[] { time, position } ) );
 			return this;
 		}
 

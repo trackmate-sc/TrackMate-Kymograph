@@ -28,10 +28,16 @@ public class KymographOverlay extends Roi
 
 	private final Kymographs model;
 
+	private final double spaceInterval;
+
+	private final double timeInterval;
+
 	public KymographOverlay( final Kymographs model, final ImagePlus imp )
 	{
 		super( 0, 0, imp );
 		this.model = model;
+		this.spaceInterval = imp.getCalibration().pixelWidth;
+		this.timeInterval = imp.getCalibration().pixelHeight;
 		model.listeners().add( () -> imp.updateAndDraw() );
 		model.selectionListeners().add( () -> imp.updateAndDraw() );
 	}
@@ -93,8 +99,8 @@ public class KymographOverlay extends Roi
 			return;
 
 		final RealLocalizable first = itSegment.next();
-		double xs = toX( first, xcorner, magnification );
-		double ys = toY( first, ycorner, magnification );
+		double xs = toPosition( first, xcorner, magnification, spaceInterval );
+		double ys = toTime( first, ycorner, magnification, timeInterval );
 		if ( path.getCurrentPoint() == null )
 			path.moveTo( xs, ys );
 		else
@@ -104,8 +110,8 @@ public class KymographOverlay extends Roi
 		while ( itSegment.hasNext() )
 		{
 			final RealLocalizable next = itSegment.next();
-			xs = toX( next, xcorner, magnification );
-			ys = toY( next, ycorner, magnification );
+			xs = toPosition( next, xcorner, magnification, spaceInterval );
+			ys = toTime( next, ycorner, magnification, timeInterval );
 			path.lineTo( xs, ys );
 		}
 	}
@@ -115,15 +121,15 @@ public class KymographOverlay extends Roi
 		return new Ellipse2D.Double( xs - radius, ys - radius, 2. * radius, 2. * radius );
 	}
 
-	private static final double toX( final RealLocalizable p, final int xcorner, final double magnification )
+	private static final double toTime( final RealLocalizable p, final int ycorner, final double magnification, final double timeInterval )
 	{
-		final double xp = p.getDoublePosition( 0 ) + 0.5;
-		return ( xp - xcorner ) * magnification;
+		final double yp = p.getDoublePosition( 0 ) / timeInterval + 0.5;
+		return ( yp - ycorner ) * magnification;
 	}
 
-	private static final double toY( final RealLocalizable p, final int ycorner, final double magnification )
+	private static final double toPosition( final RealLocalizable p, final int xcorner, final double magnification, final double spaceInterval )
 	{
-		final double yp = p.getDoublePosition( 1 ) + 0.5;
-		return ( yp - ycorner ) * magnification;
+		final double xp = p.getDoublePosition( 1 ) / spaceInterval + 0.5;
+		return ( xp - xcorner ) * magnification;
 	}
 }

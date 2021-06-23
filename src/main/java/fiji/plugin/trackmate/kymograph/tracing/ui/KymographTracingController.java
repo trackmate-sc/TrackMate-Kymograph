@@ -38,7 +38,7 @@ public class KymographTracingController
 
 	public KymographTracingController( final ImagePlus imp )
 	{
-		this( imp, new Kymographs( imp.getTitle() ) );
+		this( imp, new Kymographs( imp.getTitle(), imp.getCalibration().getXUnit(), imp.getCalibration().getYUnit() ) );
 	}
 
 	public KymographTracingController( final ImagePlus imp, final Kymographs kymographs )

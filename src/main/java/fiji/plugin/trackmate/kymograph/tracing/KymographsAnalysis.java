@@ -21,6 +21,7 @@ import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
 import org.apache.commons.math3.analysis.interpolation.LoessInterpolator;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
+import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
@@ -30,6 +31,7 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.renderer.xy.XYSplineRenderer;
 import org.jfree.chart.ui.RectangleInsets;
 import org.jfree.data.xy.DefaultXYDataset;
+import org.scijava.util.DoubleArray;
 
 import fiji.plugin.trackmate.gui.Icons;
 import fiji.plugin.trackmate.kymograph.tracing.Kymographs.Kymograph;
@@ -47,9 +49,34 @@ public class KymographsAnalysis
 
 	public static final JFrame plot( final Kymographs kymographs )
 	{
-		final String timeUnits = "frame"; // TODO
-		final String spaceUnits = "pixel"; // TODO
-		final double timeInterval = 1.; // TODO
+		return plot( kymographs, guessTimeInterval( kymographs ) );
+	}
+
+	private static double guessTimeInterval( final Kymographs kymographs )
+	{
+		final Median median = new Median();
+		final DoubleArray arr = new DoubleArray();
+
+		double previousT = Double.NaN;
+		for ( final Kymograph kymograph : kymographs )
+			for ( final Segment segment : kymograph )
+				for ( final RealLocalizable point : segment )
+				{
+					final double t = point.getDoublePosition( 0 );
+					if ( !Double.isNaN( previousT ) )
+					{
+						final double dt = Math.abs( t - previousT );
+						arr.addValue( dt );
+					}
+					previousT = t;
+				}
+		return median.evaluate( arr.copyArray() );
+	}
+
+	public static final JFrame plot( final Kymographs kymographs, final double timeInterval )
+	{
+		final String spaceUnits = kymographs.getSpaceUnits();
+		final String timeUnits = kymographs.getTimeUnits();
 
 		// Position.
 		final DefaultXYDataset positionDataset = positionDataset( kymographs, timeInterval );
@@ -241,7 +268,7 @@ public class KymographsAnalysis
 		{
 			for ( final RealLocalizable point : segment )
 			{
-				final double time = point.getDoublePosition( 1 );
+				final double time = point.getDoublePosition( 0 );
 				if ( time > max )
 					max = time;
 				if ( time < min )
@@ -270,10 +297,10 @@ public class KymographsAnalysis
 		{
 			for ( final RealLocalizable point : segment )
 			{
-				// Position is in X.
-				final double position = point.getDoublePosition( 0 );
-				// Time is in Y in kymographs.
-				final double time = point.getDoublePosition( 1 );
+				// Time is in X in kymographs.
+				final double time = point.getDoublePosition( 0 );
+				// Position is in Y.
+				final double position = point.getDoublePosition( 1 );
 
 				sums.adjustOrPutValue( time, position, position );
 				ns.adjustOrPutValue( time, 1, 1 );

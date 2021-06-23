@@ -29,11 +29,19 @@ public class KymographTracingTool extends AbstractTool implements MouseListener,
 
 	private final KymographTracer tracer;
 
+	private final double timeInterval;
+
+	private final double spaceInterval;
+
 	public KymographTracingTool( final ImagePlus imp, final Kymographs model, final KymographTracer tracer )
 	{
 		super();
 		this.tracer = tracer;
 		this.modelBuilder = model.add();
+		// Extract physical calibration. We expect time to be along Y.
+		this.timeInterval = imp.getCalibration().pixelHeight;
+		this.spaceInterval = imp.getCalibration().pixelWidth;
+		System.out.println( spaceInterval ); // DEBUG
 		kymographId.set( model.size() );
 		run( null );
 		super.registerTool( imp );
@@ -59,7 +67,12 @@ public class KymographTracingTool extends AbstractTool implements MouseListener,
 			final Path segment = tracer.addSegment( x, y );
 			modelBuilder.segment( SEGMENT_BASE_NAME + "_" + kymographId.get() + "_" + segmentId.incrementAndGet() );
 			for ( final Localizable point : segment )
-				modelBuilder.point( point );
+			{
+				// Scale to physical units.
+				final double xk = point.getDoublePosition( 0 ) * spaceInterval;
+				final double tk = point.getDoublePosition( 1 ) * timeInterval;
+				modelBuilder.point( tk, xk );
+			}
 			logger.log( "Added segment to kymograph." );
 
 			tracer.getImp().updateAndDraw();
