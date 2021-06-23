@@ -257,7 +257,7 @@ public class KymographTracingPanel extends JPanel
 	private TreeModel createTreeModel( final Kymographs kymographs )
 	{
 
-		final DefaultMutableTreeNode root = new DefaultMutableTreeNode( "Kymographs" );
+		final DefaultMutableTreeNode root = new DefaultMutableTreeNode( kymographs.toString() );
 		for ( final Kymograph kymograph : kymographs )
 		{
 			final DefaultMutableTreeNode kymographNode = new DefaultMutableTreeNode( kymograph, true );
@@ -300,10 +300,6 @@ public class KymographTracingPanel extends JPanel
 			{
 				( ( Segment ) obj ).setName( name );
 				nodeChanged( node );
-			}
-			else
-			{
-				super.valueForPathChanged( path, newValue );
 			}
 		}
 	}
