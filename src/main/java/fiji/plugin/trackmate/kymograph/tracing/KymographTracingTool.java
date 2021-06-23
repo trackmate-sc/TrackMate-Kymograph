@@ -41,7 +41,6 @@ public class KymographTracingTool extends AbstractTool implements MouseListener,
 		// Extract physical calibration. We expect time to be along Y.
 		this.timeInterval = imp.getCalibration().pixelHeight;
 		this.spaceInterval = imp.getCalibration().pixelWidth;
-		System.out.println( spaceInterval ); // DEBUG
 		kymographId.set( model.size() );
 		run( null );
 		super.registerTool( imp );
