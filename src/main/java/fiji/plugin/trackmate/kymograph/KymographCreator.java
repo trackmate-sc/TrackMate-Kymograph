@@ -121,10 +121,10 @@ public class KymographCreator implements OutputAlgorithm< ImagePlus >
 		 * Prepare output.
 		 */
 		
-		final String outputName = String.format( "Kymograph %s -> %s of %s",
+		final String outputName = String.format( "%s_Kymograph_%s-%s",
+				imp.getShortTitle(),
 				params.trackID1.toString(),
-				params.trackID2.toString(),
-				imp.getShortTitle() );
+				params.trackID2.toString() );
 		final int height = minmax[ 1 ] - minmax[ 0 ] + 1;
 		final int nChannels = imp.getNChannels();
 		final int nZSlices = 1 ;
