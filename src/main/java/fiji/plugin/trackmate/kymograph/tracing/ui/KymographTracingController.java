@@ -22,6 +22,8 @@ import fiji.plugin.trackmate.kymograph.tracing.KymographsAnalysis;
 import fiji.plugin.trackmate.kymograph.tracing.KymographsIO;
 import fiji.plugin.trackmate.kymograph.tracing.TracingParameters;
 import fiji.plugin.trackmate.util.TMUtils;
+import fiji.plugin.trackmate.visualization.ViewUtils;
+import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Overlay;
 import net.imagej.ImgPlus;
@@ -33,6 +35,13 @@ public class KymographTracingController
 {
 
 	private static JFileChooser fileChooser = new JFileChooser();
+
+	static
+	{
+		fileChooser.setFileFilter( new FileNameExtensionFilter( "JSon files", "json" ) );
+		final File defaultFile = new File( new File( System.getProperty( "user.dir" ) ), "Kymographs.json" );
+		fileChooser.setSelectedFile( defaultFile );
+	}
 
 	private final KymographTracingPanel gui;
 
@@ -83,9 +92,51 @@ public class KymographTracingController
 		frame.setVisible( true );
 	}
 
+	public static void load() throws IOException
+	{
+		fileChooser.setDialogTitle( "Load from a JSon file" );
+		final int returnVal = fileChooser.showOpenDialog( null );
+		if ( returnVal == JFileChooser.APPROVE_OPTION )
+		{
+			final File selectedFile = fileChooser.getSelectedFile();
+			load( selectedFile.getAbsolutePath() );
+		}
+	}
+
+	public static void load( final String kymographPath ) throws IOException
+	{
+		final File kymographFile = new File( kymographPath );
+		final String str = new String( Files.readAllBytes( kymographFile.toPath() ) );
+		final Kymographs kymographs = KymographsIO.fromJson( str );
+		final String imageName = kymographs.toString();
+		final File imagePath = new File( kymographFile.getParent(), imageName );
+		final ImagePlus imp;
+		if ( !imagePath.exists() )
+		{
+			IJ.log( "Could not read image from path saved in kymograph file: " + imagePath );
+			final double spaceInterval = KymographsAnalysis.guessSpaceInterval( kymographs );
+			final double timeInterval = KymographsAnalysis.guessTimeInterval( kymographs );
+			final double[] positionMinMax = KymographsAnalysis.positionMinMax( kymographs );
+			final double[] timeMinMax = KymographsAnalysis.timeMinMax( kymographs );
+			final int width = ( int ) ( 1.1 * positionMinMax[ 1 ] / spaceInterval );
+			final int height = ( int ) ( 1.1 * timeMinMax[ 1 ] / timeInterval );
+			final int nslices = 1;
+			final int nframes = 1;
+			final double[] calibration = new double[] { spaceInterval, timeInterval, 1. };
+			imp = ViewUtils.makeEmptyImagePlus( width, height, nslices, nframes, calibration );
+			imp.getCalibration().setXUnit( kymographs.getSpaceUnits() );
+			imp.getCalibration().setYUnit( kymographs.getTimeUnits() );
+		}
+		else
+		{
+			imp = IJ.openImage( imagePath.getAbsolutePath() );
+		}
+		imp.show();
+		new KymographTracingController( imp, kymographs );
+	}
+
 	public static void load( final ImagePlus imp ) throws IOException
 	{
-		fileChooser.setFileFilter( new FileNameExtensionFilter( "JSon files:", ".json" ) );
 		fileChooser.setSelectedFile( proposeJsonFile( imp ) );
 		fileChooser.setDialogTitle( "Load from a JSon file" );
 		final int returnVal = fileChooser.showOpenDialog( null );
@@ -105,7 +156,6 @@ public class KymographTracingController
 
 	private void save( final Kymographs kymographs, final Component parent )
 	{
-		fileChooser.setFileFilter( new FileNameExtensionFilter( "JSon files:", ".json" ) );
 		fileChooser.setDialogTitle( "Save to a JSon file" );
 		final int returnVal = fileChooser.showSaveDialog( parent );
 		if ( returnVal == JFileChooser.APPROVE_OPTION )
