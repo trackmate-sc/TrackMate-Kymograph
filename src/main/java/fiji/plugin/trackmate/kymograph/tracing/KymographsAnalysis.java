@@ -23,6 +23,7 @@ import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
@@ -77,6 +78,7 @@ public class KymographsAnalysis
 		final JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setHorizontalScrollBarPolicy( ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER );
 		scrollPane.setViewportView( panel );
+		scrollPane.getVerticalScrollBar().setUnitIncrement( 16 );
 
 		// The frame
 		final JFrame frame = new JFrame();
@@ -161,7 +163,7 @@ public class KymographsAnalysis
 			final String yUnits )
 	{
 
-		final Color bgColor = Color.LIGHT_GRAY;
+		final Color bgColor = new Color( 220, 220, 220 );
 
 		// The chart.
 		final String title = "";
@@ -210,6 +212,9 @@ public class KymographsAnalysis
 		// Ticks. Fewer of them.
 		plot.getRangeAxis().setTickLabelInsets( new RectangleInsets( 20, 10, 20, 10 ) );
 		plot.getDomainAxis().setTickLabelInsets( new RectangleInsets( 10, 20, 10, 20 ) );
+
+		// Plot range.
+		( ( NumberAxis ) plot.getRangeAxis() ).setAutoRangeIncludesZero( false );
 
 		// The chart panel.
 		final ExportableChartPanel chartPanel = new ExportableChartPanel( chart );
