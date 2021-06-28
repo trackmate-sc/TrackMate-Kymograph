@@ -103,12 +103,20 @@ public class KymographTracingController
 		// Wire some listeners.
 		gui.btnPreview.addActionListener( e -> SwingUtilities.invokeLater( () -> preview( imp, tracingParameters.getSigma() ) ) );
 		gui.btnSave.addActionListener( e -> save( kymographs, frame ) );
-		gui.btnAnalyze.addActionListener( e -> analyze( kymographs ) );
+		gui.btnPlot.addActionListener( e -> plot( kymographs ) );
+		gui.btnTables.addActionListener( e -> showTables( kymographs ) );
 	}
 
-	private void analyze( final Kymographs kymographs )
+	private void plot( final Kymographs kymographs )
 	{
 		final JFrame frame = KymographsAnalysis.plot( kymographs );
+		GuiUtils.positionWindow( frame, SwingUtilities.getWindowAncestor( gui ) );
+		frame.setVisible( true );
+	}
+
+	private void showTables( final Kymographs kymographs )
+	{
+		final JFrame frame = KymographsAnalysis.tables( kymographs );
 		GuiUtils.positionWindow( frame, SwingUtilities.getWindowAncestor( gui ) );
 		frame.setVisible( true );
 	}

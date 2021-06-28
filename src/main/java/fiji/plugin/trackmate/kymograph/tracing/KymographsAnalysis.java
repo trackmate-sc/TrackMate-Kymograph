@@ -28,12 +28,22 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 
@@ -44,6 +54,7 @@ import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
@@ -52,13 +63,18 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.renderer.xy.XYSplineRenderer;
 import org.jfree.chart.ui.RectangleInsets;
 import org.jfree.data.xy.DefaultXYDataset;
+import org.jfree.data.xy.XYDataset;
 import org.scijava.util.DoubleArray;
 
+import fiji.plugin.trackmate.Dimension;
 import fiji.plugin.trackmate.gui.Icons;
 import fiji.plugin.trackmate.kymograph.tracing.Kymographs.Kymograph;
 import fiji.plugin.trackmate.kymograph.tracing.Kymographs.Segment;
 import fiji.plugin.trackmate.util.ExportableChartPanel;
+import fiji.plugin.trackmate.util.TMUtils;
+import fiji.plugin.trackmate.visualization.FeatureColorGenerator;
 import fiji.plugin.trackmate.visualization.GlasbeyLut;
+import fiji.plugin.trackmate.visualization.table.TablePanel;
 import gnu.trove.map.hash.TDoubleDoubleHashMap;
 import gnu.trove.map.hash.TDoubleIntHashMap;
 import net.imglib2.RealLocalizable;
@@ -132,6 +148,22 @@ public class KymographsAnalysis
 		return new double[] { min, max };
 	}
 
+	public static JFrame tables( final Kymographs kymographs )
+	{
+		return tables( kymographs, guessTimeInterval( kymographs ) );
+	}
+
+	public static final JFrame tables( final Kymographs kymographs, final double timeInterval )
+	{
+		final DefaultXYDataset positionDataset = positionDataset( kymographs, timeInterval );
+		final DefaultXYDataset velocityDataset = velocityDataset( kymographs, timeInterval );
+		final DefaultXYDataset smoothVelocityDataset = smoothVelocityDataset( kymographs, timeInterval );
+		return new KymographTables(
+				table( kymographs, positionDataset, Dimension.POSITION ),
+				table( kymographs, velocityDataset, Dimension.VELOCITY ),
+				table( kymographs, smoothVelocityDataset, Dimension.VELOCITY ) );
+	}
+
 	public static final JFrame plot( final Kymographs kymographs, final double timeInterval )
 	{
 		final String spaceUnits = kymographs.getSpaceUnits();
@@ -139,15 +171,15 @@ public class KymographsAnalysis
 
 		// Position.
 		final DefaultXYDataset positionDataset = positionDataset( kymographs, timeInterval );
-		final ExportableChartPanel positionChart = chart( positionDataset, timeUnits, "Position", spaceUnits );
+		final ChartPanel positionChart = chart( positionDataset, timeUnits, "Position", spaceUnits );
 
 		// Velocity.
 		final DefaultXYDataset velocityDataset = velocityDataset( kymographs, timeInterval );
-		final ExportableChartPanel velocityChart = chart( velocityDataset, timeUnits, "Velocity", spaceUnits + "/" + timeUnits );
+		final ChartPanel velocityChart = chart( velocityDataset, timeUnits, "Velocity", spaceUnits + "/" + timeUnits );
 
 		// Smoorh velocity.
 		final DefaultXYDataset smoothVelocityDataset = smoothVelocityDataset( kymographs, timeInterval );
-		final ExportableChartPanel smoothVelocityChart = chart( smoothVelocityDataset, timeUnits, "Smoothed velocity", spaceUnits + "/" + timeUnits );
+		final ChartPanel smoothVelocityChart = chart( smoothVelocityDataset, timeUnits, "Smoothed velocity", spaceUnits + "/" + timeUnits );
 
 		// The Panel.
 		final JPanel panel = new JPanel();
@@ -242,7 +274,7 @@ public class KymographsAnalysis
 		return dataset;
 	}
 
-	private static final ExportableChartPanel chart(
+	private static final ChartPanel chart(
 			final DefaultXYDataset dataset,
 			final String timeUnits,
 			final String ylabel,
@@ -302,8 +334,22 @@ public class KymographsAnalysis
 		// Plot range.
 		( ( NumberAxis ) plot.getRangeAxis() ).setAutoRangeIncludesZero( false );
 
-		// The chart panel.
-		final ExportableChartPanel chartPanel = new ExportableChartPanel( chart );
+		/*
+		 * The chart panel. Not the true exportable one from TrackMate (we use
+		 * special dataset) but one that we can save as image anyway.
+		 */
+		final ExportableChartPanel chartPanel = new ExportableChartPanel( chart )
+		{
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			protected JPopupMenu createPopupMenu( final boolean properties, final boolean copy, final boolean save, final boolean print, final boolean zoom )
+			{
+				final JPopupMenu menu = super.createPopupMenu( properties, copy, false, print, zoom );
+				menu.remove( 11 );
+				return menu;
+			}
+		};
 		chartPanel.setPreferredSize( new java.awt.Dimension( 500, 270 ) );
 		return chartPanel;
 	}
@@ -411,5 +457,89 @@ public class KymographsAnalysis
 				? linearInterpolator.interpolate( linearTimes, linearPos )
 				: splineInterpolator.interpolate( linearTimes, linearPos );
 		return function;
+	}
+
+	private static final TablePanel< Map< String, Double > > table( final Kymographs kymographs, final XYDataset dataset, final Dimension dimension )
+	{
+		final String xFeature = "Time";
+
+		// Data values for each X, then for each kymograph, possibly missing.
+		final TreeMap< Double, Map< String, Double > > dataItems = new TreeMap<>();
+		final int nSeries = dataset.getSeriesCount();
+		for ( int series = 0; series < nSeries; series++ )
+		{
+			final String name = dataset.getSeriesKey( series ).toString();
+			final int nItems = dataset.getItemCount( series );
+			for ( int item = 0; item < nItems; item++ )
+			{
+				final double x = dataset.getXValue( series, item );
+				Map< String, Double > map = dataItems.get( Double.valueOf( x ) );
+				if ( map == null )
+				{
+					map = new HashMap<>();
+					dataItems.put( Double.valueOf( x ), map );
+				}
+				map.put( name, ( Double ) dataset.getY( series, item ) );
+				map.putIfAbsent( xFeature, Double.valueOf( x ) );
+			}
+		}
+
+		// Features.
+		final List< String > features = new ArrayList<>( kymographs.size() + 1 );
+		features.add( xFeature );
+		features.addAll( getNames( kymographs ) );
+
+		// Y values metadata.
+		final Map< String, String > featureNames = new HashMap<>( kymographs.size() );
+		final Map< String, String > featureShortNames = new HashMap<>( kymographs.size() );
+		final Map< String, String > featureUnits = new HashMap<>( kymographs.size() );
+		final Map< String, Boolean > isInts = new HashMap<>( kymographs.size() );
+		final Map< String, String > infoTexts = new HashMap<>( kymographs.size() );
+		for ( final String feature : features )
+		{
+			featureNames.put( feature, feature );
+			featureShortNames.put( feature, feature );
+			featureUnits.put( feature, TMUtils.getUnitsFor( dimension, kymographs.getSpaceUnits(), kymographs.getTimeUnits() ) );
+			isInts.put( feature, Boolean.FALSE );
+			infoTexts.put( feature, "" );
+		}
+
+		// X value metadata.
+		featureNames.put( xFeature, xFeature );
+		featureShortNames.put( xFeature, xFeature );
+		featureUnits.put( xFeature, kymographs.getTimeUnits() );
+		isInts.put( xFeature, Boolean.FALSE );
+		infoTexts.put( xFeature, "" );
+
+		// What we do not use.
+		final Function< Map< String, Double >, String > labelGenerator = null;
+		final BiConsumer< Map< String, Double >, String > labelSetter = null;
+		final Supplier< FeatureColorGenerator< Map< String, Double > > > coloring = null;
+
+		// Value provider.
+		final BiFunction< Map< String, Double >, String, Double > featureFun = ( item, feature ) -> item.get( feature );
+
+		// The table.
+		final TablePanel< Map< String, Double > > table = new TablePanel<>(
+				dataItems.values(),
+				features,
+				featureFun,
+				featureNames,
+				featureShortNames,
+				featureUnits,
+				isInts,
+				infoTexts,
+				coloring,
+				labelGenerator,
+				labelSetter );
+		return table;
+	}
+
+	private static List< String > getNames( final Kymographs kymographs )
+	{
+		final List< String > names = new ArrayList<>( kymographs.size() );
+		for ( final Kymograph kymograph : kymographs )
+			names.add( kymograph.toString() );
+		return names;
 	}
 }
