@@ -19,7 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
-package fiji.plugin.trackmate.kymograph.tracing;
+package fiji.plugin.trackmate.kymograph.tracing.analysis;
 
 import java.awt.Container;
 import java.awt.FileDialog;

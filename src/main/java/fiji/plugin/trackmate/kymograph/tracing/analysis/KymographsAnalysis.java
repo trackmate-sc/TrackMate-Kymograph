@@ -19,7 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
-package fiji.plugin.trackmate.kymograph.tracing;
+package fiji.plugin.trackmate.kymograph.tracing.analysis;
 
 import static fiji.plugin.trackmate.gui.Fonts.FONT;
 import static fiji.plugin.trackmate.gui.Fonts.SMALL_FONT;
@@ -68,6 +68,7 @@ import org.scijava.util.DoubleArray;
 
 import fiji.plugin.trackmate.Dimension;
 import fiji.plugin.trackmate.gui.Icons;
+import fiji.plugin.trackmate.kymograph.tracing.Kymographs;
 import fiji.plugin.trackmate.kymograph.tracing.Kymographs.Kymograph;
 import fiji.plugin.trackmate.kymograph.tracing.Kymographs.Segment;
 import fiji.plugin.trackmate.util.ExportableChartPanel;
