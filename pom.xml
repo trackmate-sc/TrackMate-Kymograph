@@ -69,8 +69,8 @@
 		<url>https://github.com/tinevez/TrackMate-Kymograph/issues</url>
 	</issueManagement>
 	<ciManagement>
-		<system>Travis CI</system>
-		<url>https://travis-ci.org/tinevez/TrackMate-Kymograph</url>
+		<system>GitHub Actions</system>
+		<url>https://github.com/tinevez/TrackMate-Ilastik/actions</url>
 	</ciManagement>
 
 	<properties>
