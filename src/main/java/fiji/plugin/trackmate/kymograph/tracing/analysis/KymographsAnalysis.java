@@ -51,8 +51,8 @@ import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
 import org.apache.commons.math3.analysis.interpolation.LoessInterpolator;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
+import org.apache.commons.math3.analysis.interpolation.UnivariateInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
-import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -64,7 +64,6 @@ import org.jfree.chart.renderer.xy.XYSplineRenderer;
 import org.jfree.chart.ui.RectangleInsets;
 import org.jfree.data.xy.DefaultXYDataset;
 import org.jfree.data.xy.XYDataset;
-import org.scijava.util.DoubleArray;
 
 import fiji.plugin.trackmate.Dimension;
 import fiji.plugin.trackmate.gui.Icons;
@@ -84,43 +83,6 @@ public class KymographsAnalysis
 {
 
 	protected static final Shape DEFAULT_SHAPE = new Ellipse2D.Double( -3, -3, 6, 6 );
-
-	public static final JFrame plot( final Kymographs kymographs )
-	{
-		return plot( kymographs, guessTimeInterval( kymographs ) );
-	}
-
-	public static double guessTimeInterval( final Kymographs kymographs )
-	{
-		return guessInterval( kymographs, 0 );
-	}
-
-	public static double guessSpaceInterval( final Kymographs kymographs )
-	{
-		return guessInterval( kymographs, 1 );
-	}
-
-	private static double guessInterval( final Kymographs kymographs, final int dim )
-	{
-		final Median median = new Median();
-		final DoubleArray arr = new DoubleArray();
-
-		double previousX = Double.NaN;
-		for ( final Kymograph kymograph : kymographs )
-			for ( final Segment segment : kymograph )
-				for ( final RealLocalizable point : segment )
-				{
-					final double x = point.getDoublePosition( dim );
-					if ( !Double.isNaN( previousX ) )
-					{
-						final double dx = Math.abs( x - previousX );
-						if ( x > 0. )
-							arr.addValue( dx );
-					}
-					previousX = x;
-				}
-		return median.evaluate( arr.copyArray() );
-	}
 
 	public static final double[] timeMinMax( final Kymographs kymographs )
 	{
@@ -149,37 +111,32 @@ public class KymographsAnalysis
 		return new double[] { min, max };
 	}
 
-	public static JFrame tables( final Kymographs kymographs )
+	public static final JFrame tables( final Kymographs kymographs )
 	{
-		return tables( kymographs, guessTimeInterval( kymographs ) );
-	}
-
-	public static final JFrame tables( final Kymographs kymographs, final double timeInterval )
-	{
-		final DefaultXYDataset positionDataset = positionDataset( kymographs, timeInterval );
-		final DefaultXYDataset velocityDataset = velocityDataset( kymographs, timeInterval );
-		final DefaultXYDataset smoothVelocityDataset = smoothVelocityDataset( kymographs, timeInterval );
+		final DefaultXYDataset positionDataset = positionDataset( kymographs );
+		final DefaultXYDataset velocityDataset = velocityDataset( kymographs );
+		final DefaultXYDataset smoothVelocityDataset = smoothVelocityDataset( kymographs );
 		return new KymographTables(
 				table( kymographs, positionDataset, Dimension.POSITION ),
 				table( kymographs, velocityDataset, Dimension.VELOCITY ),
 				table( kymographs, smoothVelocityDataset, Dimension.VELOCITY ) );
 	}
 
-	public static final JFrame plot( final Kymographs kymographs, final double timeInterval )
+	public static final JFrame plot( final Kymographs kymographs )
 	{
 		final String spaceUnits = kymographs.getSpaceUnits();
 		final String timeUnits = kymographs.getTimeUnits();
 
 		// Position.
-		final DefaultXYDataset positionDataset = positionDataset( kymographs, timeInterval );
+		final DefaultXYDataset positionDataset = positionDataset( kymographs );
 		final ChartPanel positionChart = chart( positionDataset, timeUnits, "Position", spaceUnits );
 
 		// Velocity.
-		final DefaultXYDataset velocityDataset = velocityDataset( kymographs, timeInterval );
+		final DefaultXYDataset velocityDataset = velocityDataset( kymographs );
 		final ChartPanel velocityChart = chart( velocityDataset, timeUnits, "Velocity", spaceUnits + "/" + timeUnits );
 
 		// Smoorh velocity.
-		final DefaultXYDataset smoothVelocityDataset = smoothVelocityDataset( kymographs, timeInterval );
+		final DefaultXYDataset smoothVelocityDataset = smoothVelocityDataset( kymographs );
 		final ChartPanel smoothVelocityChart = chart( smoothVelocityDataset, timeUnits, "Smoothed velocity", spaceUnits + "/" + timeUnits );
 
 		// The Panel.
@@ -209,8 +166,9 @@ public class KymographsAnalysis
 		return frame;
 	}
 
-	private static DefaultXYDataset velocityDataset( final Kymographs kymographs, final double timeInterval )
+	private static DefaultXYDataset velocityDataset( final Kymographs kymographs )
 	{
+		final double timeInterval = kymographs.getTimeInterval();
 		final DefaultXYDataset dataset = new DefaultXYDataset();
 		for ( final Kymograph kymograph : kymographs )
 		{
@@ -231,8 +189,9 @@ public class KymographsAnalysis
 		return dataset;
 	}
 
-	private static DefaultXYDataset smoothVelocityDataset( final Kymographs kymographs, final double timeInterval )
+	private static DefaultXYDataset smoothVelocityDataset( final Kymographs kymographs )
 	{
+		final double timeInterval = kymographs.getTimeInterval();
 		final DefaultXYDataset dataset = new DefaultXYDataset();
 		for ( final Kymograph kymograph : kymographs )
 		{
@@ -247,8 +206,13 @@ public class KymographsAnalysis
 			for ( int i = 0; i < x.length; i++ )
 				y[ i ] = function.value( x[ i ] );
 
-			final LoessInterpolator smoothingInterpolator = new LoessInterpolator( 0.25, 0 );
-			final PolynomialSplineFunction smoothFunction = smoothingInterpolator.interpolate( x, y );
+			final double bandwidth = 0.25;
+			final UnivariateInterpolator smoothingInterpolator;
+			if ( 2. / x.length < bandwidth )
+				smoothingInterpolator = new LoessInterpolator( bandwidth , 0 );
+			else
+				smoothingInterpolator = new LinearInterpolator();
+			final PolynomialSplineFunction smoothFunction = ( PolynomialSplineFunction ) smoothingInterpolator.interpolate( x, y );
 
 			final UnivariateFunction derivative = smoothFunction.derivative();
 			final double[] ys = new double[ x.length ];
@@ -260,8 +224,9 @@ public class KymographsAnalysis
 		return dataset;
 	}
 
-	private static final DefaultXYDataset positionDataset( final Kymographs kymographs, final double timeInterval )
+	private static final DefaultXYDataset positionDataset( final Kymographs kymographs )
 	{
+		final double timeInterval = kymographs.getTimeInterval();
 		final DefaultXYDataset dataset = new DefaultXYDataset();
 		for ( final Kymograph kymograph : kymographs )
 		{
@@ -270,6 +235,11 @@ public class KymographsAnalysis
 			final double[] timeMinMax = timeMinMax( kymograph );
 			final double min = timeMinMax[ 0 ];
 			final double max = timeMinMax[ 1 ];
+
+			System.out.println( min ); // DEBUG
+			System.out.println( max ); // DEBUG
+			System.out.println( timeInterval ); // DEBUG
+
 			final double[] x = ramp( min, max, timeInterval );
 			final PolynomialSplineFunction function = interpolate( kymograph, timeInterval );
 			final double[] y = new double[ x.length ];
@@ -460,7 +430,7 @@ public class KymographsAnalysis
 			linearPos[ i ] = linearFun.value( linearTimes[ i ] );
 
 		// Now we can return a function that interpolates over these points.
-		final PolynomialSplineFunction function = ( sortedTime.length < 3 )
+		final PolynomialSplineFunction function = ( linearTimes.length < 3 )
 				? linearInterpolator.interpolate( linearTimes, linearPos )
 				: splineInterpolator.interpolate( linearTimes, linearPos );
 		return function;

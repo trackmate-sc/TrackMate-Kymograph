@@ -68,7 +68,37 @@ public class KymographTracingController
 
 	public KymographTracingController( final ImagePlus imp )
 	{
-		this( imp, new Kymographs( imp.getTitle(), imp.getCalibration().getXUnit(), imp.getCalibration().getYUnit() ) );
+		this( imp, new Kymographs(
+				getKymographName( imp ),
+				imp.getCalibration().pixelWidth,
+				imp.getCalibration().frameInterval == 0. ? 1. : imp.getCalibration().frameInterval,
+				imp.getCalibration().getXUnit(),
+				imp.getCalibration().frameInterval == 0. ? "frame" : imp.getCalibration().getYUnit() ) );
+	}
+
+	private static String getKymographName( final ImagePlus imp )
+	{
+		File folder, file;
+		if ( null != imp
+				&& null != imp.getOriginalFileInfo()
+				&& null != imp.getOriginalFileInfo().directory )
+		{
+			final String directory = imp.getOriginalFileInfo().directory;
+			folder = Paths.get( directory ).toAbsolutePath().toFile();
+		}
+		else
+		{
+			folder = new File( System.getProperty( "user.dir" ) );
+		}
+		try
+		{
+			file = new File( folder.getPath() + File.separator + imp.getShortTitle() + ".json" );
+		}
+		catch ( final NullPointerException npe )
+		{
+			file = new File( folder.getPath() + File.separator + "Kymographs.json" );
+		}
+		return file.getAbsolutePath();
 	}
 
 	public KymographTracingController( final ImagePlus imp, final Kymographs kymographs )
@@ -143,8 +173,8 @@ public class KymographTracingController
 		if ( !imagePath.exists() )
 		{
 			IJ.log( "Could not read image from path saved in kymograph file: " + imagePath );
-			final double spaceInterval = KymographsAnalysis.guessSpaceInterval( kymographs );
-			final double timeInterval = KymographsAnalysis.guessTimeInterval( kymographs );
+			final double spaceInterval = kymographs.getSpaceInterval();
+			final double timeInterval = kymographs.getTimeInterval();
 			final double[] positionMinMax = KymographsAnalysis.positionMinMax( kymographs );
 			final double[] timeMinMax = KymographsAnalysis.timeMinMax( kymographs );
 			final int width = ( int ) ( 1.1 * positionMinMax[ 1 ] / spaceInterval );

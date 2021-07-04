@@ -51,14 +51,20 @@ public class Kymographs implements Iterable< Kymograph >
 
 	private final String timeUnits;
 
-	public Kymographs( final String name, final String spaceUnits, final String timeUnits )
+	private final double timeInterval;
+
+	private final double spaceInterval;
+
+	public Kymographs( final String name, final double spaceInterval, final double timeInterval, final String spaceUnits, final String timeUnits )
 	{
-		this( name, spaceUnits, timeUnits, new ArrayList<>() );
+		this( name, spaceInterval, timeInterval, spaceUnits, timeUnits, new ArrayList<>() );
 	}
 
-	private Kymographs( final String name, final String spaceUnits, final String timeUnits, final List< Kymograph > kymographs )
+	private Kymographs( final String name, final double spaceInterval, final double timeInterval, final String spaceUnits, final String timeUnits, final List< Kymograph > kymographs )
 	{
 		this.name = name;
+		this.spaceInterval = spaceInterval;
+		this.timeInterval = timeInterval;
 		this.spaceUnits = spaceUnits;
 		this.timeUnits = timeUnits;
 		this.kymographs = kymographs;
@@ -80,6 +86,16 @@ public class Kymographs implements Iterable< Kymograph >
 	public String getTimeUnits()
 	{
 		return timeUnits;
+	}
+
+	public double getSpaceInterval()
+	{
+		return spaceInterval;
+	}
+
+	public double getTimeInterval()
+	{
+		return timeInterval;
 	}
 
 	@Override

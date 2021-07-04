@@ -85,6 +85,8 @@ public class KymographsIO
 		{
 			final JsonObject modelEl = new JsonObject();
 			modelEl.addProperty( "name", kymographs.toString() );
+			modelEl.addProperty( "spaceInterval", kymographs.getSpaceInterval() );
+			modelEl.addProperty( "timeInterval", kymographs.getTimeInterval() );
 			modelEl.addProperty( "spaceUnits", kymographs.getSpaceUnits() );
 			modelEl.addProperty( "timeUnits", kymographs.getTimeUnits() );
 
@@ -124,9 +126,11 @@ public class KymographsIO
 		{
 			final JsonObject modelEl = ( JsonObject ) el;
 			final String name = modelEl.get( "name" ).getAsString();
+			final double spaceInterval = modelEl.get( "spaceInterval" ).getAsDouble();
+			final double timeInterval = modelEl.get( "timeInterval" ).getAsDouble();
 			final String spaceUnits = modelEl.get( "spaceUnits" ).getAsString();
 			final String timeUnits = modelEl.get( "timeUnits" ).getAsString();
-			final Kymographs kymographs = new Kymographs( name, spaceUnits, timeUnits );
+			final Kymographs kymographs = new Kymographs( name, spaceInterval, timeInterval, spaceUnits, timeUnits );
 			final Builder builder = kymographs.add();
 
 			final JsonArray kymArrayEl = ( JsonArray ) modelEl.get( "kymographs" );
