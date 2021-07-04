@@ -25,7 +25,6 @@ import java.awt.Component;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import javax.swing.JFileChooser;
@@ -69,42 +68,17 @@ public class KymographTracingController
 	public KymographTracingController( final ImagePlus imp )
 	{
 		this( imp, new Kymographs(
-				getKymographName( imp ),
+				proposeJsonFile( imp ),
 				imp.getCalibration().pixelWidth,
 				imp.getCalibration().frameInterval == 0. ? 1. : imp.getCalibration().frameInterval,
 				imp.getCalibration().getXUnit(),
 				imp.getCalibration().frameInterval == 0. ? "frame" : imp.getCalibration().getYUnit() ) );
 	}
 
-	private static String getKymographName( final ImagePlus imp )
-	{
-		File folder, file;
-		if ( null != imp
-				&& null != imp.getOriginalFileInfo()
-				&& null != imp.getOriginalFileInfo().directory )
-		{
-			final String directory = imp.getOriginalFileInfo().directory;
-			folder = Paths.get( directory ).toAbsolutePath().toFile();
-		}
-		else
-		{
-			folder = new File( System.getProperty( "user.dir" ) );
-		}
-		try
-		{
-			file = new File( folder.getPath() + File.separator + imp.getShortTitle() + ".json" );
-		}
-		catch ( final NullPointerException npe )
-		{
-			file = new File( folder.getPath() + File.separator + "Kymographs.json" );
-		}
-		return file.getAbsolutePath();
-	}
-
 	public KymographTracingController( final ImagePlus imp, final Kymographs kymographs )
 	{
 		assert imp != null;
-		fileChooser.setSelectedFile( proposeJsonFile( imp ) );
+		fileChooser.setSelectedFile( new File( proposeJsonFile( imp ) ) );
 
 		// Display overlay.
 		imp.setOverlay( new Overlay() );
@@ -132,7 +106,7 @@ public class KymographTracingController
 
 		// Wire some listeners.
 		gui.btnPreview.addActionListener( e -> SwingUtilities.invokeLater( () -> preview( imp, tracingParameters.getSigma() ) ) );
-		gui.btnSave.addActionListener( e -> save( kymographs, frame ) );
+		gui.btnSave.addActionListener( e -> save( kymographs, imp, frame ) );
 		gui.btnPlot.addActionListener( e -> plot( kymographs ) );
 		gui.btnTables.addActionListener( e -> showTables( kymographs ) );
 	}
@@ -168,7 +142,7 @@ public class KymographTracingController
 		final String str = new String( Files.readAllBytes( kymographFile.toPath() ) );
 		final Kymographs kymographs = KymographsIO.fromJson( str );
 		final String imageName = kymographs.toString();
-		final File imagePath = new File( kymographFile.getParent(), imageName );
+		final File imagePath = new File( imageName );
 		final ImagePlus imp;
 		if ( !imagePath.exists() )
 		{
@@ -196,7 +170,7 @@ public class KymographTracingController
 
 	public static void load( final ImagePlus imp ) throws IOException
 	{
-		fileChooser.setSelectedFile( proposeJsonFile( imp ) );
+		fileChooser.setSelectedFile( new File( proposeJsonFile( imp ) ) );
 		fileChooser.setDialogTitle( "Load from a JSon file" );
 		final int returnVal = fileChooser.showOpenDialog( null );
 		if ( returnVal == JFileChooser.APPROVE_OPTION )
@@ -213,24 +187,37 @@ public class KymographTracingController
 		new KymographTracingController( imp, kymographs );
 	}
 
-	private void save( final Kymographs kymographs, final Component parent )
+	private void save( final Kymographs kymographs, final ImagePlus imp, final Component parent )
 	{
-		fileChooser.setDialogTitle( "Save to a JSon file" );
+		fileChooser.setDialogTitle( "Save Kymograph image and data" );
 		final int returnVal = fileChooser.showSaveDialog( parent );
 		if ( returnVal == JFileChooser.APPROVE_OPTION )
 		{
+			// This is the JSon file path.
+			final File jsonFile = fileChooser.getSelectedFile();
+
+			// Build the tif file path.
+			final int i = jsonFile.getName().lastIndexOf( '.' );
+			final String name = jsonFile.getName().substring( 0, i );
+			final File tifImageFile = new File( jsonFile.getParent(), name + ".tif" );
+
+			// Save TIF image.
+			IJ.saveAs( imp, "tiff", tifImageFile.toString() );
+
+			// Save model to JSon.
+			kymographs.setName( tifImageFile.toString() );
 			final String json = KymographsIO.toJson( kymographs );
 			final byte[] strToBytes = json.getBytes();
-			final Path path = fileChooser.getSelectedFile().toPath();
 			try
 			{
-				Files.write( path, strToBytes );
+				Files.write( jsonFile.toPath(), strToBytes );
 			}
 			catch ( final IOException e )
 			{
 				e.printStackTrace();
 			}
 		}
+
 	}
 
 	private void preview( final ImagePlus imp, final double sigma )
@@ -246,30 +233,36 @@ public class KymographTracingController
 		ImageJFunctions.show( filtered, "Filtered_" + imp.getShortTitle() + "_Sigma_" + sigma );
 	}
 
-	private static final File proposeJsonFile( final ImagePlus imp )
+	private static String proposeJsonFile( final ImagePlus imp )
 	{
-		File folder;
-		final String fileName;
-		if ( null != imp.getOriginalFileInfo() && null != imp.getOriginalFileInfo().directory )
+		File folder, file;
+		// Try to get the save info.
+		if ( null != imp
+				&& null != imp.getFileInfo()
+				&& null != imp.getFileInfo().directory )
 		{
+			final String directory = imp.getFileInfo().directory;
+			folder = Paths.get( directory ).toAbsolutePath().toFile();
+		}
+		else if ( null != imp.getOriginalFileInfo()
+				&& null != imp.getOriginalFileInfo().directory )
+		{
+			// Default to open info.
 			final String directory = imp.getOriginalFileInfo().directory;
 			folder = Paths.get( directory ).toAbsolutePath().toFile();
-
-			if ( null != imp.getOriginalFileInfo().fileName )
-			{
-				final int i = imp.getOriginalFileInfo().fileName.lastIndexOf( '.' );
-				fileName = imp.getOriginalFileInfo().fileName.substring( 0, i ) + ".json";
-			}
-			else
-			{
-				fileName = "Kymographs.json";
-			}
 		}
 		else
 		{
 			folder = new File( System.getProperty( "user.dir" ) );
-			fileName = "Kymographs.json";
 		}
-		return new File( folder, fileName );
+		try
+		{
+			file = new File( folder.getPath() + File.separator + imp.getShortTitle() + ".json" );
+		}
+		catch ( final NullPointerException npe )
+		{
+			file = new File( folder.getPath() + File.separator + "Kymographs.json" );
+		}
+		return file.getAbsolutePath();
 	}
 }
