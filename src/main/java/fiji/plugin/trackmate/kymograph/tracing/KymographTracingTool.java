@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import fiji.plugin.trackmate.Logger;
 import fiji.plugin.trackmate.kymograph.tracing.Kymographs.Builder;
+import fiji.plugin.trackmate.kymograph.tracing.Kymographs.Kymograph;
 import fiji.plugin.trackmate.kymograph.tracing.astar.Path;
 import fiji.tool.AbstractTool;
 import ij.ImagePlus;
@@ -112,9 +113,30 @@ public class KymographTracingTool extends AbstractTool implements MouseListener,
 		final int z = imp.getSlice() - 1;
 		final int frame = imp.getFrame() - 1;
 		bundle.segmentId.set( 0 );
-		bundle.modelBuilder.kymograph( KYMOGRAPH_BASE_NAME + "_" + bundle.kymographId.incrementAndGet() );
+
+		final String kymoName = proposeKymographName( bundle.model, bundle.kymographId );
+		bundle.modelBuilder.kymograph( kymoName );
 		bundle.logger.log( "Starting a new kymograph." );
 		bundle.tracer.startPath( x, y, channel, z, frame );
+	}
+
+	private static String proposeKymographName( final Kymographs model, final AtomicInteger kymographId )
+	{
+
+		String name = KYMOGRAPH_BASE_NAME + "_" + kymographId.incrementAndGet();
+		while ( containName( model, name ) )
+			name = KYMOGRAPH_BASE_NAME + "_" + kymographId.incrementAndGet();
+		return name;
+	}
+
+	private static boolean containName( final Kymographs model, final String name )
+	{
+		for ( final Kymograph kymograph : model )
+		{
+			if ( kymograph.toString().equals( name ) )
+				return true;
+		}
+		return false;
 	}
 
 	@Override
@@ -215,8 +237,11 @@ public class KymographTracingTool extends AbstractTool implements MouseListener,
 
 		private final Logger logger;
 
+		private final Kymographs model;
+
 		private Bundle( final ImagePlus imp, final Kymographs model, final KymographTracer tracer, final Logger logger )
 		{
+			this.model = model;
 			this.tracer = tracer;
 			this.logger = logger;
 			this.modelBuilder = model.add();
