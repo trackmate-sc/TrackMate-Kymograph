@@ -30,6 +30,7 @@ import fiji.plugin.trackmate.Model;
 import fiji.plugin.trackmate.gui.Icons;
 import fiji.plugin.trackmate.kymograph.KymographCreationParams;
 import fiji.plugin.trackmate.kymograph.KymographCreator;
+import fiji.plugin.trackmate.kymograph.RegisteredImageCreator;
 import fiji.plugin.trackmate.kymograph.tracing.ui.KymographTracingController;
 import ij.ImagePlus;
 import ij.gui.Overlay;
@@ -41,17 +42,21 @@ public class KymographCreatorController
 
 	private JDialog dialog;
 
-	private final KymographCreator creator;
+	private final KymographCreator kymographCreator;
 
 	private final Model model;
 
 	private final ImagePlus imp;
 
+	private final RegisteredImageCreator registeredImageCreateor;
+
 	public KymographCreatorController( final Model model, final ImagePlus imp )
 	{
 		this.model = model;
 		this.imp = imp;
-		this.creator = new KymographCreator( model, imp, KymographCreationParams.create().get() );
+		final KymographCreationParams params = KymographCreationParams.create().get();
+		this.kymographCreator = new KymographCreator( model, imp, params );
+		this.registeredImageCreateor = new RegisteredImageCreator( model, imp, params );
 	}
 
 	public void showUI()
@@ -70,13 +75,14 @@ public class KymographCreatorController
 			dialog.getContentPane().add( panel );
 			dialog.pack();
 
-			panel.btnCreate.addActionListener( e -> create( panel.getKymographCreationParams() ) );
+			panel.btnCreate.addActionListener( e -> createKymograph( panel.getKymographCreationParams() ) );
 			panel.btnClearOverlay.addActionListener( e -> clearOverlay() );
+			panel.btnImg.addActionListener( e -> createRegisteredImage( panel.getKymographCreationParams() ) );
 		}
 		dialog.setVisible( true );
 	}
 
-	private void addKymographOverlay(final KymographCreationParams params)
+	private void addKymographOverlay( final KymographCreationParams params )
 	{
 		Overlay overlay = imp.getOverlay();
 		if ( overlay == null )
@@ -89,11 +95,11 @@ public class KymographCreatorController
 		final int nFrames = imp.getNFrames();
 		for ( int tp = 0; tp < nFrames; tp++ )
 		{
-			final long[] coords1 = creator.getCoords( tp, params.trackID1 );
+			final long[] coords1 = kymographCreator.getCoords( tp, params.trackID1 );
 			if ( coords1 == null )
 				continue;
 
-			final long[] coords2 = creator.getCoords( tp, params.trackID2 );
+			final long[] coords2 = kymographCreator.getCoords( tp, params.trackID2 );
 			if ( coords2 == null )
 				continue;
 
@@ -131,16 +137,16 @@ public class KymographCreatorController
 		imp.updateAndDraw();
 	}
 
-	private void create( final KymographCreationParams params )
+	private void createKymograph( final KymographCreationParams params )
 	{
 		model.getLogger().log( "Generating kymograph with the following parameters: " + params.toString() );
-		creator.setParams( params );
-		if ( !creator.checkInput() || !creator.process() )
+		kymographCreator.setParams( params );
+		if ( !kymographCreator.checkInput() || !kymographCreator.process() )
 		{
-			model.getLogger().error( creator.getErrorMessage() );
+			model.getLogger().error( kymographCreator.getErrorMessage() );
 			return;
 		}
-		final ImagePlus out = creator.getResult();
+		final ImagePlus out = kymographCreator.getResult();
 		out.show();
 
 		// Launch tracing controller.
@@ -148,6 +154,23 @@ public class KymographCreatorController
 
 		addKymographOverlay( params );
 
-		model.getLogger().log( "\nDone." );
+		model.getLogger().log( "\nDone.\n" );
+	}
+
+	private void createRegisteredImage( final KymographCreationParams params )
+	{
+		model.getLogger().log( "Generating registered image with the following parameters: " + params.toString() );
+		registeredImageCreateor.setParams( params );
+		if ( !registeredImageCreateor.checkInput() || !registeredImageCreateor.process() )
+		{
+			model.getLogger().error( registeredImageCreateor.getErrorMessage() );
+			return;
+		}
+		final ImagePlus out = registeredImageCreateor.getResult();
+		out.show();
+
+		addKymographOverlay( params );
+
+		model.getLogger().log( "\nDone.\n" );
 	}
 }

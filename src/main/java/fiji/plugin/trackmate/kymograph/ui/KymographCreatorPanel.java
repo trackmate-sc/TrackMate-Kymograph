@@ -27,6 +27,8 @@ import java.awt.Insets;
 import java.util.Arrays;
 import java.util.Vector;
 
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFormattedTextField;
@@ -50,6 +52,8 @@ public class KymographCreatorPanel extends JPanel
 
 	final JButton btnClearOverlay;
 
+	final JButton btnImg;
+
 	private final JComboBox< Integer > cmbboxTrack1;
 
 	private final JComboBox< Integer > cmbboxTrack2;
@@ -60,18 +64,17 @@ public class KymographCreatorPanel extends JPanel
 
 	private final JComboBox< KymographAlignment > cmbboxAlignment;
 
-
 	public KymographCreatorPanel( final TrackSelectorUI trackSelectorUI )
 	{
 		cmbboxTrack1 = trackSelectorUI.create();
 		cmbboxTrack2 = trackSelectorUI.create();
 		if ( cmbboxTrack2.getModel().getSize() > 1 )
 			cmbboxTrack2.setSelectedIndex( 1 );
-		
+
 		final GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 0, 0 };
-		gridBagLayout.rowHeights = new int[] { 36, 0, 0, 0, 0, 0, 39, 0 };
-		gridBagLayout.columnWeights = new double[] { 0.0, 1.0, Double.MIN_VALUE };
+		gridBagLayout.rowHeights = new int[] { 36, 0, 0, 0, 0, 0, 0, 0 };
+		gridBagLayout.columnWeights = new double[] { 1.0, 1.0, Double.MIN_VALUE };
 		gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, Double.MIN_VALUE };
 		setLayout( gridBagLayout );
 
@@ -81,7 +84,7 @@ public class KymographCreatorPanel extends JPanel
 		lblTitle.setHorizontalAlignment( SwingConstants.CENTER );
 		final GridBagConstraints gbcLblTitle = new GridBagConstraints();
 		gbcLblTitle.gridwidth = 2;
-		gbcLblTitle.insets = new Insets( 5, 5, 5, 5 );
+		gbcLblTitle.insets = new Insets( 5, 5, 5, 0 );
 		gbcLblTitle.fill = GridBagConstraints.HORIZONTAL;
 		gbcLblTitle.gridx = 0;
 		gbcLblTitle.gridy = 0;
@@ -131,7 +134,7 @@ public class KymographCreatorPanel extends JPanel
 		ftfThickness.setHorizontalAlignment( SwingConstants.CENTER );
 		GuiUtils.selectAllOnFocus( ftfThickness );
 		final GridBagConstraints gbcFtfThickness = new GridBagConstraints();
-		gbcFtfThickness.insets = new Insets( 5, 5, 5, 5 );
+		gbcFtfThickness.insets = new Insets( 5, 5, 5, 0 );
 		gbcFtfThickness.fill = GridBagConstraints.HORIZONTAL;
 		gbcFtfThickness.gridx = 1;
 		gbcFtfThickness.gridy = 3;
@@ -148,7 +151,7 @@ public class KymographCreatorPanel extends JPanel
 		cmbboxProjection = new JComboBox<>( new Vector<>( Arrays.asList( KymographProjectionMethod.values() ) ) );
 		cmbboxProjection.setSelectedItem( KymographCreationParams.create().get().projectionMethod );
 		final GridBagConstraints gbcCmbboxProjection = new GridBagConstraints();
-		gbcCmbboxProjection.insets = new Insets( 5, 5, 5, 5 );
+		gbcCmbboxProjection.insets = new Insets( 5, 5, 5, 0 );
 		gbcCmbboxProjection.fill = GridBagConstraints.HORIZONTAL;
 		gbcCmbboxProjection.gridx = 1;
 		gbcCmbboxProjection.gridy = 4;
@@ -165,29 +168,33 @@ public class KymographCreatorPanel extends JPanel
 		cmbboxAlignment = new JComboBox<>( new Vector<>( Arrays.asList( KymographAlignment.values() ) ) );
 		cmbboxAlignment.setSelectedItem( KymographCreationParams.create().get().alignment );
 		final GridBagConstraints gbcCmbboxAlignment = new GridBagConstraints();
-		gbcCmbboxAlignment.insets = new Insets( 5, 5, 5, 5 );
+		gbcCmbboxAlignment.insets = new Insets( 5, 5, 5, 0 );
 		gbcCmbboxAlignment.fill = GridBagConstraints.HORIZONTAL;
 		gbcCmbboxAlignment.gridx = 1;
 		gbcCmbboxAlignment.gridy = 5;
 		add( cmbboxAlignment, gbcCmbboxAlignment );
 
-		btnClearOverlay = new JButton( "Clear overlay" );
-		final GridBagConstraints gbcBtnClearOverlay = new GridBagConstraints();
-		gbcBtnClearOverlay.anchor = GridBagConstraints.SOUTHWEST;
-		gbcBtnClearOverlay.insets = new Insets( 5, 5, 5, 5 );
-		gbcBtnClearOverlay.gridx = 0;
-		gbcBtnClearOverlay.gridy = 6;
-		add( btnClearOverlay, gbcBtnClearOverlay );
+		final JPanel panelButtons = new JPanel();
+		final GridBagConstraints gbc_panelButtons = new GridBagConstraints();
+		gbc_panelButtons.anchor = GridBagConstraints.SOUTH;
+		gbc_panelButtons.gridwidth = 2;
+		gbc_panelButtons.fill = GridBagConstraints.HORIZONTAL;
+		gbc_panelButtons.gridx = 0;
+		gbc_panelButtons.gridy = 6;
+		add( panelButtons, gbc_panelButtons );
+		panelButtons.setLayout( new BoxLayout( panelButtons, BoxLayout.X_AXIS ) );
 
-		btnCreate = new JButton( "Create" );
-		final GridBagConstraints gbcBtnCreate = new GridBagConstraints();
-		gbcBtnCreate.insets = new Insets( 5, 5, 5, 5 );
-		gbcBtnCreate.anchor = GridBagConstraints.SOUTHEAST;
-		gbcBtnCreate.gridx = 1;
-		gbcBtnCreate.gridy = 6;
-		add( btnCreate, gbcBtnCreate );
+		btnClearOverlay = new JButton( "Clear overlay" );
+		btnCreate = new JButton( "Kymograph" );
+		btnImg = new JButton( "Registered image" );
+
+		panelButtons.add( btnClearOverlay );
+		panelButtons.add( Box.createHorizontalGlue() );
+		panelButtons.add( btnCreate );
+		panelButtons.add( Box.createHorizontalStrut( 5 ) );
+		panelButtons.add( btnImg );
 	}
-	
+
 	public KymographCreationParams getKymographCreationParams()
 	{
 		return KymographCreationParams.create()
