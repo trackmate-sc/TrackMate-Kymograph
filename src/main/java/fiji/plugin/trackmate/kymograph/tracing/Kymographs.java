@@ -264,6 +264,14 @@ public class Kymographs implements Iterable< Kymograph >
 		{
 			return segments.size();
 		}
+
+		public boolean isempty()
+		{
+			for ( final Segment segment : segments )
+				if ( !segment.isempty() )
+					return false;
+			return true;
+		}
 	}
 
 	public static class Segment implements Iterable< RealLocalizable >
@@ -276,6 +284,11 @@ public class Kymographs implements Iterable< Kymograph >
 		public Segment( final String name )
 		{
 			this.name = name;
+		}
+
+		public boolean isempty()
+		{
+			return points.isEmpty();
 		}
 
 		@Override
