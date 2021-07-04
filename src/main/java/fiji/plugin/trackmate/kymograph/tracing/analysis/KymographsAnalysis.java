@@ -214,6 +214,8 @@ public class KymographsAnalysis
 		final DefaultXYDataset dataset = new DefaultXYDataset();
 		for ( final Kymograph kymograph : kymographs )
 		{
+			if ( kymograph.isempty() )
+				continue;
 			final double[] timeMinMax = timeMinMax( kymograph );
 			final double min = timeMinMax[ 0 ];
 			final double max = timeMinMax[ 1 ];
@@ -234,6 +236,8 @@ public class KymographsAnalysis
 		final DefaultXYDataset dataset = new DefaultXYDataset();
 		for ( final Kymograph kymograph : kymographs )
 		{
+			if ( kymograph.isempty() )
+				continue;
 			final double[] timeMinMax = timeMinMax( kymograph );
 			final double min = timeMinMax[ 0 ];
 			final double max = timeMinMax[ 1 ];
@@ -261,6 +265,8 @@ public class KymographsAnalysis
 		final DefaultXYDataset dataset = new DefaultXYDataset();
 		for ( final Kymograph kymograph : kymographs )
 		{
+			if ( kymograph.isempty() )
+				continue;
 			final double[] timeMinMax = timeMinMax( kymograph );
 			final double min = timeMinMax[ 0 ];
 			final double max = timeMinMax[ 1 ];
