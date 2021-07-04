@@ -21,9 +21,12 @@
  */
 package fiji.plugin.trackmate.kymograph.tracing;
 
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import fiji.plugin.trackmate.Logger;
@@ -40,92 +43,101 @@ public class KymographTracingTool extends AbstractTool implements MouseListener,
 
 	private static final String SEGMENT_BASE_NAME = "Segment";
 
-	private final AtomicInteger kymographId = new AtomicInteger( 0 );
+	private static KymographTracingTool instance;
 
-	private final AtomicInteger segmentId = new AtomicInteger( 0 );
+	private final Map< ImagePlus, Bundle > bundles;
 
-	private final Builder modelBuilder;
-
-	private Logger logger = Logger.VOID_LOGGER;
-
-	private final KymographTracer tracer;
-
-	private final double timeInterval;
-
-	private final double spaceInterval;
-
-	public KymographTracingTool( final ImagePlus imp, final Kymographs model, final KymographTracer tracer )
+	/**
+	 * Return the singleton instance for this tool. If it was not previously
+	 * instantiated, this calls instantiates it.
+	 */
+	public static KymographTracingTool getInstance()
 	{
-		super();
-		this.tracer = tracer;
-		this.modelBuilder = model.add();
-		// Extract physical calibration. We expect time to be along Y.
-		this.timeInterval = imp.getCalibration().pixelHeight;
-		this.spaceInterval = imp.getCalibration().pixelWidth;
-		kymographId.set( model.size() );
+		if ( null == instance )
+			instance = new KymographTracingTool();
+		return instance;
+	}
+
+	private KymographTracingTool()
+	{
+		this.bundles = new HashMap<>();
 		run( null );
+	}
+
+	public void register( final ImagePlus imp, final Kymographs model, final KymographTracer tracer, final Logger logger )
+	{
+		final Bundle bundle = new Bundle( imp, model, tracer, logger );
+		bundles.put( imp, bundle );
 		super.registerTool( imp );
 	}
 
 	@Override
 	public void mouseClicked( final MouseEvent e )
 	{
+		final Bundle bundle = getBundle( e );
+		if ( bundle == null )
+			return;
+
 		final int x = getOffscreenX( e );
 		final int y = getOffscreenY( e );
 
-		if ( tracer.isTracing() )
+		if ( bundle.tracer.isTracing() )
 		{
 			if ( e.getClickCount() > 1 )
 			{
-				tracer.finishPath();
-				tracer.getImp().updateAndDraw();
-				logger.log( "Finished kymograph." );
-				modelBuilder.done();
+				bundle.tracer.finishPath();
+				bundle.tracer.getImp().updateAndDraw();
+				bundle.logger.log( "Finished kymograph." );
+				bundle.modelBuilder.done();
 				return;
 			}
 			
-			final Path segment = tracer.addSegment( x, y );
-			modelBuilder.segment( SEGMENT_BASE_NAME + "_" + kymographId.get() + "_" + segmentId.incrementAndGet() );
+			final Path segment = bundle.tracer.addSegment( x, y );
+			bundle.modelBuilder.segment( SEGMENT_BASE_NAME + "_" + bundle.kymographId.get() + "_" + bundle.segmentId.incrementAndGet() );
 			for ( final Localizable point : segment )
 			{
 				// Scale to physical units.
-				final double xk = point.getDoublePosition( 0 ) * spaceInterval;
-				final double tk = point.getDoublePosition( 1 ) * timeInterval;
-				modelBuilder.point( tk, xk );
+				final double xk = point.getDoublePosition( 0 ) * bundle.spaceInterval;
+				final double tk = point.getDoublePosition( 1 ) * bundle.timeInterval;
+				bundle.modelBuilder.point( tk, xk );
 			}
-			logger.log( "Added segment to kymograph." );
+			bundle.logger.log( "Added segment to kymograph." );
 
-			tracer.getImp().updateAndDraw();
+			bundle.tracer.getImp().updateAndDraw();
 			return;
 		}
 
-		final ImagePlus imp = tracer.getImp();
+		final ImagePlus imp = bundle.tracer.getImp();
 		final int channel = imp.getChannel() - 1;
 		final int z = imp.getSlice() - 1;
 		final int frame = imp.getFrame() - 1;
-		segmentId.set( 0 );
-		modelBuilder.kymograph( KYMOGRAPH_BASE_NAME + "_" + kymographId.incrementAndGet() );
-		logger.log( "Starting a new kymograph." );
-		tracer.startPath( x, y, channel, z, frame );
+		bundle.segmentId.set( 0 );
+		bundle.modelBuilder.kymograph( KYMOGRAPH_BASE_NAME + "_" + bundle.kymographId.incrementAndGet() );
+		bundle.logger.log( "Starting a new kymograph." );
+		bundle.tracer.startPath( x, y, channel, z, frame );
 	}
 
 	@Override
 	public void mouseMoved( final MouseEvent e )
 	{
-		if ( !tracer.isTracing() )
+		final Bundle bundle = getBundle( e );
+		if ( bundle == null )
+			return;
+
+		if ( !bundle.tracer.isTracing() )
 			return;
 
 		if ( !e.isShiftDown() )
 		{
-			tracer.clearPreview();
-			tracer.getImp().updateAndDraw();
+			bundle.tracer.clearPreview();
+			bundle.tracer.getImp().updateAndDraw();
 			return;
 		}
 
 		final int x = getOffscreenX( e );
 		final int y = getOffscreenY( e );
-		tracer.previewSegment( x, y );
-		tracer.getImp().updateAndDraw();
+		bundle.tracer.previewSegment( x, y );
+		bundle.tracer.getImp().updateAndDraw();
 	}
 
 	/**
@@ -178,8 +190,39 @@ public class KymographTracingTool extends AbstractTool implements MouseListener,
 				+ "7D18CeddD28D2bD6aD74Da2Da4Dc6DeaC36bD1cD1dD1eD2eD3eD45D4eD5eCdaaD29D2aD54D65D72Da7DddDe6";
 	}
 
-	public void setLogger( final Logger logger )
+	private Bundle getBundle( final ComponentEvent e )
 	{
-		this.logger = logger;
+		final ImagePlus imp = getImagePlus( e );
+		if ( imp == null )
+			return null;
+		return bundles.get( imp );
+	}
+
+	private static class Bundle
+	{
+
+		private final KymographTracer tracer;
+
+		private final double timeInterval;
+
+		private final double spaceInterval;
+
+		private final AtomicInteger kymographId = new AtomicInteger( 0 );
+
+		private final AtomicInteger segmentId = new AtomicInteger( 0 );
+
+		private final Builder modelBuilder;
+
+		private final Logger logger;
+
+		private Bundle( final ImagePlus imp, final Kymographs model, final KymographTracer tracer, final Logger logger )
+		{
+			this.tracer = tracer;
+			this.logger = logger;
+			this.modelBuilder = model.add();
+			this.timeInterval = imp.getCalibration().pixelHeight;
+			this.spaceInterval = imp.getCalibration().pixelWidth;
+			kymographId.set( model.size() );
+		}
 	}
 }

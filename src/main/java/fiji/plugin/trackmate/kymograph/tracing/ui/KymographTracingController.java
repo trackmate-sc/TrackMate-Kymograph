@@ -97,8 +97,8 @@ public class KymographTracingController
 		frame.setVisible( true );
 
 		// Tracking tool.
-		final KymographTracingTool tool = new KymographTracingTool( imp, kymographs, tracer );
-		tool.setLogger( gui.getLogger() );
+		final KymographTracingTool tool = KymographTracingTool.getInstance();
+		tool.register( imp, kymographs, tracer, gui.getLogger() );
 
 		// Wire some listeners.
 		gui.btnPreview.addActionListener( e -> SwingUtilities.invokeLater( () -> preview( imp, tracingParameters.getSigma() ) ) );
