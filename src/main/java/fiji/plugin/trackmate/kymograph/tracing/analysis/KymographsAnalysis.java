@@ -235,11 +235,6 @@ public class KymographsAnalysis
 			final double[] timeMinMax = timeMinMax( kymograph );
 			final double min = timeMinMax[ 0 ];
 			final double max = timeMinMax[ 1 ];
-
-			System.out.println( min ); // DEBUG
-			System.out.println( max ); // DEBUG
-			System.out.println( timeInterval ); // DEBUG
-
 			final double[] x = ramp( min, max, timeInterval );
 			final PolynomialSplineFunction function = interpolate( kymograph, timeInterval );
 			final double[] y = new double[ x.length ];
