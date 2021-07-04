@@ -45,7 +45,7 @@ public class Kymographs implements Iterable< Kymograph >
 
 	private final transient Listeners.List< SelectionListener > selectionListeners;
 
-	private final String name;
+	private String name;
 
 	private final String spaceUnits;
 
@@ -187,6 +187,11 @@ public class Kymographs implements Iterable< Kymograph >
 	public String toString()
 	{
 		return name;
+	}
+
+	public void setName( final String name )
+	{
+		this.name = name;
 	}
 
 	public static final class Builder
