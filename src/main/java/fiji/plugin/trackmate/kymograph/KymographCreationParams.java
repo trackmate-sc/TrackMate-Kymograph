@@ -70,7 +70,7 @@ public class KymographCreationParams
 
 		private KymographProjectionMethod projectionMethod = KymographProjectionMethod.MIP;
 
-		private KymographAlignment alignment = KymographAlignment.FIRST;
+		private KymographAlignment alignment = KymographAlignment.CENTER;
 
 		private Builder()
 		{}
