@@ -128,7 +128,7 @@ public class RegisteredImageCreator implements OutputAlgorithm< ImagePlus >
 		{
 			final LUT[] luts = imp.getLuts();
 			( ( CompositeImage ) output ).setLuts( luts );
-			( ( CompositeImage ) output ).setDisplayMode( CompositeImage.GRAYSCALE );
+			( ( CompositeImage ) output ).setDisplayMode( CompositeImage.COMPOSITE );
 		}
 
 		// Write into output image.
