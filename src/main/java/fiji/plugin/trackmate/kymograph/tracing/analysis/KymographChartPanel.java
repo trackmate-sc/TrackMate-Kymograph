@@ -160,9 +160,9 @@ public class KymographChartPanel extends ChartPanel
 			if ( file.getPath().endsWith( ".png" ) )
 				ChartUtils.saveChartAsPNG( file, getChart(), getWidth(), getHeight() );
 			else if ( file.getPath().endsWith( ".pdf" ) )
-				ChartExporter.exportChartAsPDF( getChart(), getBounds(), file );
+				ChartExporter.exportChartAsPDF( file, getChart(), getWidth(), getHeight() );
 			else if ( file.getPath().endsWith( ".svg" ) )
-				ChartExporter.exportChartAsSVG( getChart(), getBounds(), file );
+				ChartExporter.exportChartAsSVG( file, getChart(), getWidth(), getHeight() );
 			else
 				IJ.error( "Invalid file extension.", "Please choose a filename with one of the 3 supported extension: .png, .pdf or .svg." );
 		}
