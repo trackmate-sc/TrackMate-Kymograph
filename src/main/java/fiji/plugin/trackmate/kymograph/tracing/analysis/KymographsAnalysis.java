@@ -66,6 +66,7 @@ import org.jfree.data.xy.DefaultXYDataset;
 import org.jfree.data.xy.XYDataset;
 
 import fiji.plugin.trackmate.Dimension;
+import fiji.plugin.trackmate.gui.GuiUtils;
 import fiji.plugin.trackmate.gui.Icons;
 import fiji.plugin.trackmate.kymograph.tracing.Kymographs;
 import fiji.plugin.trackmate.kymograph.tracing.Kymographs.Kymograph;
@@ -283,7 +284,14 @@ public class KymographsAnalysis
 		renderer.setDefaultShapesVisible( false );
 		renderer.setAutoPopulateSeriesStroke( false );
 		for ( int i = 0; i < nseries; i++ )
-			renderer.setSeriesPaint( i, GlasbeyLut.next(), false );
+		{
+			Color color = GlasbeyLut.next();
+			final double colorDistance = GuiUtils.colorDistance( color, bgColor );
+			// Invert if color difference is too small, to make it visible.
+			if ( colorDistance < 10. )
+				color = GuiUtils.invert( color );
+			renderer.setSeriesPaint( i, color, false );
+		}
 
 		// The plot.
 		final XYPlot plot = chart.getXYPlot();
