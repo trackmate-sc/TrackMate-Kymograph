@@ -70,9 +70,9 @@ public class KymographTracingController
 		this( imp, new Kymographs(
 				proposeJsonFile( imp ),
 				imp.getCalibration().pixelWidth,
-				imp.getCalibration().frameInterval == 0. ? 1. : imp.getCalibration().frameInterval,
+				imp.getCalibration().pixelHeight == 0. ? 1. : imp.getCalibration().pixelHeight,
 				imp.getCalibration().getXUnit(),
-				imp.getCalibration().frameInterval == 0. ? "frame" : imp.getCalibration().getYUnit() ) );
+				imp.getCalibration().pixelHeight == 0. ? "frame" : imp.getCalibration().getYUnit() ) );
 	}
 
 	public KymographTracingController( final ImagePlus imp, final Kymographs kymographs )
