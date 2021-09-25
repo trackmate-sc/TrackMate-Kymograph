@@ -58,6 +58,7 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.renderer.xy.XYSplineRenderer;
@@ -130,15 +131,15 @@ public class KymographsAnalysis
 
 		// Position.
 		final DefaultXYDataset positionDataset = positionDataset( kymographs );
-		final ChartPanel positionChart = chart( positionDataset, timeUnits, "Position", spaceUnits );
+		final ChartPanel positionChart = chart( positionDataset, timeUnits, "Position", spaceUnits, false );
 
 		// Velocity.
 		final DefaultXYDataset velocityDataset = velocityDataset( kymographs );
-		final ChartPanel velocityChart = chart( velocityDataset, timeUnits, "Velocity", spaceUnits + "/" + timeUnits );
+		final ChartPanel velocityChart = chart( velocityDataset, timeUnits, "Velocity", spaceUnits + "/" + timeUnits, true );
 
-		// Smoorh velocity.
+		// Smooth velocity.
 		final DefaultXYDataset smoothVelocityDataset = smoothVelocityDataset( kymographs );
-		final ChartPanel smoothVelocityChart = chart( smoothVelocityDataset, timeUnits, "Smoothed velocity", spaceUnits + "/" + timeUnits );
+		final ChartPanel smoothVelocityChart = chart( smoothVelocityDataset, timeUnits, "Smoothed velocity", spaceUnits + "/" + timeUnits, true );
 
 		// The Panel.
 		final JPanel panel = new JPanel();
@@ -251,7 +252,8 @@ public class KymographsAnalysis
 			final DefaultXYDataset dataset,
 			final String timeUnits,
 			final String ylabel,
-			final String yUnits )
+			final String yUnits,
+			final boolean drawZeroLine )
 	{
 
 		final Color bgColor = new Color( 220, 220, 220 );
@@ -306,6 +308,14 @@ public class KymographsAnalysis
 		plot.setRangeCrosshairVisible( false );
 		plot.setRangeGridlinesVisible( false );
 		plot.setBackgroundAlpha( 0f );
+
+		// Line at Y = 0.
+		if ( drawZeroLine )
+		{
+			final ValueMarker marker = new ValueMarker( 0. );
+			marker.setPaint( Color.black );
+			plot.addRangeMarker( marker );
+		}
 
 		// Ticks. Fewer of them.
 		plot.getRangeAxis().setTickLabelInsets( new RectangleInsets( 20, 10, 20, 10 ) );
