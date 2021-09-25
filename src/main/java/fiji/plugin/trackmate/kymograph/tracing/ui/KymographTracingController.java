@@ -142,28 +142,40 @@ public class KymographTracingController
 		final String str = new String( Files.readAllBytes( kymographFile.toPath() ) );
 		final Kymographs kymographs = KymographsIO.fromJson( str );
 		final String imageName = kymographs.toString();
-		final File imagePath = new File( imageName );
+		final File absoluteImagePath = new File( imageName );
+		final File relativeImagePath = new File( kymographFile.getParent(), absoluteImagePath.getName() );
 		final ImagePlus imp;
-		if ( !imagePath.exists() )
+
+		// Try relative path first.
+		if ( relativeImagePath.exists() )
 		{
-			IJ.log( "Could not read image from path saved in kymograph file: " + imagePath );
-			final double spaceInterval = kymographs.getSpaceInterval();
-			final double timeInterval = kymographs.getTimeInterval();
-			final double[] positionMinMax = KymographsAnalysis.positionMinMax( kymographs );
-			final double[] timeMinMax = KymographsAnalysis.timeMinMax( kymographs );
-			final int width = ( int ) ( 1.1 * positionMinMax[ 1 ] / spaceInterval );
-			final int height = ( int ) ( 1.1 * timeMinMax[ 1 ] / timeInterval );
-			final int nslices = 1;
-			final int nframes = 1;
-			final double[] calibration = new double[] { spaceInterval, timeInterval, 1. };
-			imp = ViewUtils.makeEmptyImagePlus( width, height, nslices, nframes, calibration );
-			imp.getCalibration().setXUnit( kymographs.getSpaceUnits() );
-			imp.getCalibration().setYUnit( kymographs.getTimeUnits() );
+			imp = IJ.openImage( relativeImagePath.getAbsolutePath() );
 		}
 		else
 		{
-			imp = IJ.openImage( imagePath.getAbsolutePath() );
+			// Then try absolute path.
+			if ( !absoluteImagePath.exists() )
+			{
+				IJ.log( "Could not read image from path saved in kymograph file: " + absoluteImagePath );
+				final double spaceInterval = kymographs.getSpaceInterval();
+				final double timeInterval = kymographs.getTimeInterval();
+				final double[] positionMinMax = KymographsAnalysis.positionMinMax( kymographs );
+				final double[] timeMinMax = KymographsAnalysis.timeMinMax( kymographs );
+				final int width = ( int ) ( 1.1 * positionMinMax[ 1 ] / spaceInterval );
+				final int height = ( int ) ( 1.1 * timeMinMax[ 1 ] / timeInterval );
+				final int nslices = 1;
+				final int nframes = 1;
+				final double[] calibration = new double[] { spaceInterval, timeInterval, 1. };
+				imp = ViewUtils.makeEmptyImagePlus( width, height, nslices, nframes, calibration );
+				imp.getCalibration().setXUnit( kymographs.getSpaceUnits() );
+				imp.getCalibration().setYUnit( kymographs.getTimeUnits() );
+			}
+			else
+			{
+				imp = IJ.openImage( absoluteImagePath.getAbsolutePath() );
+			}
 		}
+
 		imp.show();
 		new KymographTracingController( imp, kymographs );
 	}
