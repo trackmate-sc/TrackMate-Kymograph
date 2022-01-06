@@ -40,6 +40,7 @@ import fiji.plugin.trackmate.kymograph.tracing.KymographTracingTool;
 import fiji.plugin.trackmate.kymograph.tracing.Kymographs;
 import fiji.plugin.trackmate.kymograph.tracing.KymographsIO;
 import fiji.plugin.trackmate.kymograph.tracing.TracingParameters;
+import fiji.plugin.trackmate.kymograph.tracing.analysis.KymographTables;
 import fiji.plugin.trackmate.kymograph.tracing.analysis.KymographsAnalysis;
 import fiji.plugin.trackmate.util.TMUtils;
 import fiji.plugin.trackmate.visualization.ViewUtils;
@@ -142,7 +143,7 @@ public class KymographTracingController
 		final String str = new String( Files.readAllBytes( kymographFile.toPath() ) );
 		final Kymographs kymographs = KymographsIO.fromJson( str );
 		final String imageName = kymographs.toString();
-		final File absoluteImagePath = new File( imageName );
+		final File absoluteImagePath = new File( imageName.replace( '\\', '/' ) );
 		final File relativeImagePath = new File( kymographFile.getParent(), absoluteImagePath.getName() );
 		final ImagePlus imp;
 
@@ -177,6 +178,7 @@ public class KymographTracingController
 		}
 
 		imp.show();
+		KymographTables.selectedFile = kymographFile.getAbsolutePath();
 		new KymographTracingController( imp, kymographs );
 	}
 

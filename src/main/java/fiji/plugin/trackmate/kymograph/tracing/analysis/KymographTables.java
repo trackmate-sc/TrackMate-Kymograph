@@ -49,6 +49,8 @@ public class KymographTables extends JFrame
 
 	private static final long serialVersionUID = 1L;
 
+	private static final String[] tablename = new String[] { "-position", "-velocity", "-smoothedvelocity" };
+
 	public static String selectedFile = System.getProperty( "user.home" ) + File.separator + "export.csv";
 
 	private final List< TablePanel< Map< String, Double > > > tables;
@@ -99,6 +101,15 @@ public class KymographTables extends JFrame
 
 	private  void exportToCsv( final int index )
 	{
+		if ( selectedFile != null )
+		{
+			final int dot = selectedFile.lastIndexOf( '.' );
+			String prefix = selectedFile.substring( 0, dot );
+			for ( final String tn : tablename )
+				prefix = prefix.replace( tn, "" );
+			selectedFile = prefix + tablename[ index ] + ".csv";
+		}
+
 		final TablePanel< Map< String, Double > > table = tables.get( index );
 		final File file = FileChooser.chooseFile(
 				this,
