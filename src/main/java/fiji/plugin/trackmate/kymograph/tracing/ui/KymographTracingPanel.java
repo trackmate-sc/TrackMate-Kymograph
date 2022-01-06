@@ -29,6 +29,7 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
+import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -46,8 +47,6 @@ import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
-
-import org.scijava.ui.behaviour.util.AbstractNamedAction;
 
 import fiji.plugin.trackmate.Logger;
 import fiji.plugin.trackmate.gui.Fonts;
@@ -330,7 +329,7 @@ public class KymographTracingPanel extends JPanel
 		}
 	}
 
-	private static class DeleteCurrentAction extends AbstractNamedAction
+	private static class DeleteCurrentAction extends AbstractAction
 	{
 
 		private static final long serialVersionUID = 1L;
