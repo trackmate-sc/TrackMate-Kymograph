@@ -25,14 +25,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 
 import org.scijava.util.DoubleArray;
 
 import fiji.plugin.trackmate.Model;
-import fiji.plugin.trackmate.Spot;
 import fiji.plugin.trackmate.kymograph.KymographProjectionMethod.Accumulator;
+import fiji.plugin.trackmate.kymograph.ui.KymographUtils;
 import fiji.plugin.trackmate.util.TMUtils;
 import ij.CompositeImage;
 import ij.IJ;
@@ -100,7 +98,7 @@ public class KymographCreator implements OutputAlgorithm< ImagePlus >
 		 * Collect all the intensities.
 		 */
 
-		final int[] minmax = getMinMaxTimePoints( params.trackID1, params.trackID1 );
+		final int[] minmax = KymographUtils.getMinMaxTimePoints( model, params.trackID1, params.trackID1 );
 		final List< double[][] > lines = new ArrayList<>( minmax[ 1 ] - minmax[ 0 ] + 1 );
 		for ( int tp = minmax[ 0 ]; tp <= minmax[ 1 ]; tp++ )
 		{
@@ -192,8 +190,8 @@ public class KymographCreator implements OutputAlgorithm< ImagePlus >
 	 */
 	private double[][] collectIntensities( final int tp )
 	{
-		final long[] coords1 = getCoords( tp, params.trackID1 );
-		final long[] coords2 = getCoords( tp, params.trackID2 );
+		final long[] coords1 = KymographUtils.getCoords( model, imp, tp, params.trackID1 );
+		final long[] coords2 = KymographUtils.getCoords( model, imp, tp, params.trackID2 );
 		if ( coords1 == null || coords2 == null )
 			return null;
 
@@ -252,47 +250,6 @@ public class KymographCreator implements OutputAlgorithm< ImagePlus >
 			arr.addValue( line.next().getRealDouble() );
 
 		return arr.copyArray();
-	}
-
-	/**
-	 * Returns <code>null</code> if the specified track does not have a spot for
-	 * the specified time-point. Otherwise, returns the pixel coordinate of the
-	 * spot.
-	 * 
-	 * @param tp
-	 *            the time-point (0 based).
-	 * @param trackID
-	 *            the track ID.
-	 * @return a new <code>int[]</code> array with 3 elements (x, y, z).
-	 */
-	public long[] getCoords( final int tp, final Integer trackID )
-	{
-		final Set< Spot > spots = model.getTrackModel().trackSpots( trackID );
-		final Optional< Spot > opt = spots.stream().filter( s -> s.getFeature( Spot.FRAME ).intValue() == tp ).findFirst();
-		if ( !opt.isPresent() )
-			return null;
-
-		final Spot spot = opt.get();
-
-		final double[] calibration = TMUtils.getSpatialCalibration( imp );
-		final long[] coords = new long[ imp.getNSlices() > 1 ? 3 : 2 ];
-		for ( int d = 0; d < coords.length; d++ )
-			coords[ d ] = Math.round( spot.getDoublePosition( d ) / calibration[ d ] );
-
-		return coords;
-	}
-
-	private int[] getMinMaxTimePoints( final Integer trackID1, final Integer trackID2 )
-	{
-		final Set< Spot > spots1 = model.getTrackModel().trackSpots( trackID1 );
-		final int min1 = spots1.stream().mapToInt( s -> s.getFeature( Spot.FRAME ).intValue() ).min().getAsInt();
-		final int max1 = spots1.stream().mapToInt( s -> s.getFeature( Spot.FRAME ).intValue() ).max().getAsInt();
-
-		final Set< Spot > spots2 = model.getTrackModel().trackSpots( trackID1 );
-		final int min2 = spots2.stream().mapToInt( s -> s.getFeature( Spot.FRAME ).intValue() ).min().getAsInt();
-		final int max2 = spots2.stream().mapToInt( s -> s.getFeature( Spot.FRAME ).intValue() ).max().getAsInt();
-
-		return new int[] { Math.max( min1, min2 ), Math.min( max1, max2 ) };
 	}
 
 	@Override

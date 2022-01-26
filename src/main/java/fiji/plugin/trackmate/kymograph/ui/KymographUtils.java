@@ -38,12 +38,13 @@ import ij.ImagePlus;
 import ij.measure.ResultsTable;
 
 /**
- * Plots the distance between the two tracks that make the moving kymograph.
+ * Static utilities related to the generation of kymographs from a TrackMate
+ * model.
  * 
  * @author Jean-Yves Tinevez
  *
  */
-public class KymoLengthPlotter
+public class KymographUtils
 {
 
 	public static final JFrame plotKymographLength( final Model model, final KymographCreationParams params, final String spaceUnits, final String timeUnits )
@@ -287,20 +288,20 @@ public class KymoLengthPlotter
 
 	/**
 	 * Returns <code>null</code> if the specified track does not have a spot for
-	 * the specified time-point. Otherwise, returns the <b>pixel coordinate</b>
-	 * of the spot.
+	 * the specified time-point. Otherwise, returns the pixel coordinate of the
+	 * spot.
 	 * 
 	 * @param model
-	 *            the model where the tracks are stored.
+	 *            the model to read the track from.
 	 * @param imp
-	 *            the image to takes the calibration and dimenionality from.
+	 *            the image to get the calibration and the dimensionality from.
 	 * @param tp
 	 *            the time-point (0 based).
 	 * @param trackID
 	 *            the track ID.
 	 * @return a new <code>int[]</code> array with 3 elements (x, y, z).
 	 */
-	public static long[] getCoords( final Model model, final ImagePlus imp, final int tp, final Integer trackID )
+	public static final long[] getCoords( final Model model, final ImagePlus imp, final int tp, final Integer trackID )
 	{
 		final Set< Spot > spots = model.getTrackModel().trackSpots( trackID );
 		final Optional< Spot > opt = spots.stream().filter( s -> s.getFeature( Spot.FRAME ).intValue() == tp ).findFirst();
@@ -316,6 +317,6 @@ public class KymoLengthPlotter
 		return coords;
 	}
 
-	private KymoLengthPlotter()
+	private KymographUtils()
 	{}
 }

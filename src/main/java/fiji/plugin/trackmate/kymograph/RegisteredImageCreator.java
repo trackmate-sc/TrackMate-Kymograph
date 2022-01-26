@@ -21,11 +21,8 @@
  */
 package fiji.plugin.trackmate.kymograph;
 
-import java.util.Optional;
-import java.util.Set;
-
 import fiji.plugin.trackmate.Model;
-import fiji.plugin.trackmate.Spot;
+import fiji.plugin.trackmate.kymograph.ui.KymographUtils;
 import fiji.plugin.trackmate.util.TMUtils;
 import ij.CompositeImage;
 import ij.IJ;
@@ -99,7 +96,7 @@ public class RegisteredImageCreator implements OutputAlgorithm< ImagePlus >
 	public boolean process()
 	{
 		// Timepoints to process.
-		final int[] minmax = getMinMaxTimePoints( params.trackID1, params.trackID1 );
+		final int[] minmax = KymographUtils.getMinMaxTimePoints( model, params.trackID1, params.trackID1 );
 		final int nFrames = minmax[ 1 ] - minmax[ 0 ] + 1;
 
 		// Determine max width.
@@ -144,14 +141,14 @@ public class RegisteredImageCreator implements OutputAlgorithm< ImagePlus >
 		final long height = outimg.dimension( outimg.dimensionIndex( Axes.Y ) );
 
 		// Timepoints to process.
-		final int[] minmax = getMinMaxTimePoints( params.trackID1, params.trackID1 );
+		final int[] minmax = KymographUtils.getMinMaxTimePoints( model, params.trackID1, params.trackID1 );
 		final int nFrames = minmax[ 1 ] - minmax[ 0 ] + 1;
 
 		for ( int i = 0; i < nFrames; i++ )
 		{
 			final int tp = i + minmax[ 0 ];
-			final long[] coords1 = getCoords( tp, params.trackID1 );
-			final long[] coords2 = getCoords( tp, params.trackID2 );
+			final long[] coords1 = KymographUtils.getCoords( model, imp, tp, params.trackID1 );
+			final long[] coords2 = KymographUtils.getCoords( model, imp, tp, params.trackID2 );
 			if ( coords1 == null || coords2 == null )
 				continue;
 
@@ -197,56 +194,16 @@ public class RegisteredImageCreator implements OutputAlgorithm< ImagePlus >
 		return RealViews.affine( source, transform );
 	}
 
-	/**
-	 * Returns <code>null</code> if the specified track does not have a spot for
-	 * the specified time-point. Otherwise, returns the pixel coordinate of the
-	 * spot.
-	 * 
-	 * @param tp
-	 *            the time-point (0 based).
-	 * @param trackID
-	 *            the track ID.
-	 * @return a new <code>int[]</code> array with 3 elements (x, y, z).
-	 */
-	public long[] getCoords( final int tp, final Integer trackID )
-	{
-		final Set< Spot > spots = model.getTrackModel().trackSpots( trackID );
-		final Optional< Spot > opt = spots.stream().filter( s -> s.getFeature( Spot.FRAME ).intValue() == tp ).findFirst();
-		if ( !opt.isPresent() )
-			return null;
-
-		final Spot spot = opt.get();
-		final double[] calibration = TMUtils.getSpatialCalibration( imp );
-		final long[] coords = new long[ imp.getNSlices() > 1 ? 3 : 2 ];
-		for ( int d = 0; d < coords.length; d++ )
-			coords[ d ] = Math.round( spot.getDoublePosition( d ) / calibration[ d ] );
-
-		return coords;
-	}
-
-	private int[] getMinMaxTimePoints( final Integer trackID1, final Integer trackID2 )
-	{
-		final Set< Spot > spots1 = model.getTrackModel().trackSpots( trackID1 );
-		final int min1 = spots1.stream().mapToInt( s -> s.getFeature( Spot.FRAME ).intValue() ).min().getAsInt();
-		final int max1 = spots1.stream().mapToInt( s -> s.getFeature( Spot.FRAME ).intValue() ).max().getAsInt();
-
-		final Set< Spot > spots2 = model.getTrackModel().trackSpots( trackID1 );
-		final int min2 = spots2.stream().mapToInt( s -> s.getFeature( Spot.FRAME ).intValue() ).min().getAsInt();
-		final int max2 = spots2.stream().mapToInt( s -> s.getFeature( Spot.FRAME ).intValue() ).max().getAsInt();
-
-		return new int[] { Math.max( min1, min2 ), Math.min( max1, max2 ) };
-	}
-
 	private double getMaxWidth( final Integer trackID1, final Integer trackID2 )
 	{
-		final int[] mm = getMinMaxTimePoints( trackID1, trackID2 );
+		final int[] mm = KymographUtils.getMinMaxTimePoints( model, trackID1, trackID2 );
 		final int min = mm[ 0 ];
 		final int max = mm[ 1 ];
 		double maxLength = Double.NEGATIVE_INFINITY;
 		for ( int tp = min; tp <= max; tp++ )
 		{
-			final long[] coords1 = getCoords( tp, params.trackID1 );
-			final long[] coords2 = getCoords( tp, params.trackID2 );
+			final long[] coords1 = KymographUtils.getCoords( model, imp, tp, params.trackID1 );
+			final long[] coords2 = KymographUtils.getCoords( model, imp, tp, params.trackID2 );
 			if ( coords1 == null || coords2 == null )
 				continue;
 

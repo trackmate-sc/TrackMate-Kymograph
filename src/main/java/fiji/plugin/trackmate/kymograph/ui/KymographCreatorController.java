@@ -88,7 +88,7 @@ public class KymographCreatorController
 	private void plotKymograhPlength( final KymographCreationParams params )
 	{
 		final Calibration cal = imp.getCalibration();
-		final JFrame frame = KymoLengthPlotter.plotKymographLength( model, params, cal.getUnit(), cal.getTimeUnit() );
+		final JFrame frame = KymographUtils.plotKymographLength( model, params, cal.getUnit(), cal.getTimeUnit() );
 		frame.setLocationRelativeTo( dialog );
 		frame.setVisible( true );
 	}
@@ -106,11 +106,11 @@ public class KymographCreatorController
 		final int nFrames = imp.getNFrames();
 		for ( int tp = 0; tp < nFrames; tp++ )
 		{
-			final long[] coords1 = kymographCreator.getCoords( tp, params.trackID1 );
+			final long[] coords1 = KymographUtils.getCoords( model, imp, tp, params.trackID1 );
 			if ( coords1 == null )
 				continue;
 
-			final long[] coords2 = kymographCreator.getCoords( tp, params.trackID2 );
+			final long[] coords2 = KymographUtils.getCoords( model, imp, tp, params.trackID2 );
 			if ( coords2 == null )
 				continue;
 

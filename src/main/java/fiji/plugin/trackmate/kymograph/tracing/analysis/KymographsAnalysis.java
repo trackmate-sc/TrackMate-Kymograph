@@ -21,11 +21,6 @@
  */
 package fiji.plugin.trackmate.kymograph.tracing.analysis;
 
-import static fiji.plugin.trackmate.gui.Fonts.FONT;
-import static fiji.plugin.trackmate.gui.Fonts.SMALL_FONT;
-
-import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
 import java.util.ArrayList;
@@ -43,7 +38,6 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 
@@ -53,29 +47,18 @@ import org.apache.commons.math3.analysis.interpolation.LoessInterpolator;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.interpolation.UnivariateInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
-import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.chart.plot.ValueMarker;
-import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-import org.jfree.chart.renderer.xy.XYSplineRenderer;
-import org.jfree.chart.ui.RectangleInsets;
 import org.jfree.data.xy.DefaultXYDataset;
 import org.jfree.data.xy.XYDataset;
 
 import fiji.plugin.trackmate.Dimension;
-import fiji.plugin.trackmate.gui.GuiUtils;
 import fiji.plugin.trackmate.gui.Icons;
 import fiji.plugin.trackmate.kymograph.tracing.Kymographs;
 import fiji.plugin.trackmate.kymograph.tracing.Kymographs.Kymograph;
 import fiji.plugin.trackmate.kymograph.tracing.Kymographs.Segment;
-import fiji.plugin.trackmate.util.ExportableChartPanel;
+import fiji.plugin.trackmate.kymograph.ui.KymographUtils;
 import fiji.plugin.trackmate.util.TMUtils;
 import fiji.plugin.trackmate.visualization.FeatureColorGenerator;
-import fiji.plugin.trackmate.visualization.GlasbeyLut;
 import fiji.plugin.trackmate.visualization.table.TablePanel;
 import gnu.trove.map.hash.TDoubleDoubleHashMap;
 import gnu.trove.map.hash.TDoubleIntHashMap;
@@ -131,15 +114,15 @@ public class KymographsAnalysis
 
 		// Position.
 		final DefaultXYDataset positionDataset = positionDataset( kymographs );
-		final ChartPanel positionChart = chart( positionDataset, timeUnits, "Position", spaceUnits, false );
+		final ChartPanel positionChart = KymographUtils.chart( positionDataset, timeUnits, "Position", spaceUnits, false, false );
 
 		// Velocity.
 		final DefaultXYDataset velocityDataset = velocityDataset( kymographs );
-		final ChartPanel velocityChart = chart( velocityDataset, timeUnits, "Velocity", spaceUnits + "/" + timeUnits, true );
+		final ChartPanel velocityChart = KymographUtils.chart( velocityDataset, timeUnits, "Velocity", spaceUnits + "/" + timeUnits, true, false );
 
 		// Smooth velocity.
 		final DefaultXYDataset smoothVelocityDataset = smoothVelocityDataset( kymographs );
-		final ChartPanel smoothVelocityChart = chart( smoothVelocityDataset, timeUnits, "Smoothed velocity", spaceUnits + "/" + timeUnits, true );
+		final ChartPanel smoothVelocityChart = KymographUtils.chart( smoothVelocityDataset, timeUnits, "Smoothed velocity", spaceUnits + "/" + timeUnits, true, false );
 
 		// The Panel.
 		final JPanel panel = new JPanel();
@@ -246,102 +229,6 @@ public class KymographsAnalysis
 			dataset.addSeries( kymograph.toString(), new double[][] { x, y } );
 		}
 		return dataset;
-	}
-
-	public static final ChartPanel chart(
-			final DefaultXYDataset dataset,
-			final String timeUnits,
-			final String ylabel,
-			final String yUnits,
-			final boolean drawZeroLine )
-	{
-
-		final Color bgColor = new Color( 220, 220, 220 );
-
-		// The chart.
-		final String title = "";
-		final String xAxisLabel = "Time (" + timeUnits + ")";
-		final String yAxisLabel = ylabel + " (" + yUnits + ")";
-		final JFreeChart chart = ChartFactory.createXYLineChart(
-				title,
-				xAxisLabel,
-				yAxisLabel,
-				dataset,
-				PlotOrientation.VERTICAL,
-				true,
-				true,
-				false );
-		chart.getTitle().setFont( FONT );
-		chart.getLegend().setItemFont( SMALL_FONT );
-		chart.setBackgroundPaint( bgColor );
-		chart.setBorderVisible( false );
-		chart.getLegend().setBackgroundPaint( bgColor );
-
-		// Renderer.
-		final XYLineAndShapeRenderer renderer = new XYSplineRenderer();
-		// new XYLineAndShapeRenderer( true, false );
-		final int nseries = dataset.getSeriesCount();
-		GlasbeyLut.reset();
-		renderer.setDefaultStroke( new BasicStroke( 2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND ) );
-		renderer.setDefaultShapesVisible( false );
-		renderer.setAutoPopulateSeriesStroke( false );
-		for ( int i = 0; i < nseries; i++ )
-		{
-			Color color = GlasbeyLut.next();
-			final double colorDistance = GuiUtils.colorDistance( color, bgColor );
-			// Invert if color difference is too small, to make it visible.
-			if ( colorDistance < 10. )
-				color = GuiUtils.invert( color );
-			renderer.setSeriesPaint( i, color, false );
-		}
-
-		// The plot.
-		final XYPlot plot = chart.getXYPlot();
-		plot.setRenderer( renderer );
-		plot.getRangeAxis().setLabelFont( FONT );
-		plot.getRangeAxis().setTickLabelFont( SMALL_FONT );
-		plot.getDomainAxis().setLabelFont( FONT );
-		plot.getDomainAxis().setTickLabelFont( SMALL_FONT );
-		plot.setOutlineVisible( false );
-		plot.setDomainCrosshairVisible( false );
-		plot.setDomainGridlinesVisible( false );
-		plot.setRangeCrosshairVisible( false );
-		plot.setRangeGridlinesVisible( false );
-		plot.setBackgroundAlpha( 0f );
-
-		// Line at Y = 0.
-		if ( drawZeroLine )
-		{
-			final ValueMarker marker = new ValueMarker( 0. );
-			marker.setPaint( Color.black );
-			plot.addRangeMarker( marker );
-		}
-
-		// Ticks. Fewer of them.
-		plot.getRangeAxis().setTickLabelInsets( new RectangleInsets( 20, 10, 20, 10 ) );
-		plot.getDomainAxis().setTickLabelInsets( new RectangleInsets( 10, 20, 10, 20 ) );
-
-		// Plot range.
-		( ( NumberAxis ) plot.getRangeAxis() ).setAutoRangeIncludesZero( false );
-
-		/*
-		 * The chart panel. Not the true exportable one from TrackMate (we use
-		 * special dataset) but one that we can save as image anyway.
-		 */
-		final ExportableChartPanel chartPanel = new ExportableChartPanel( chart )
-		{
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			protected JPopupMenu createPopupMenu( final boolean properties, final boolean copy, final boolean save, final boolean print, final boolean zoom )
-			{
-				final JPopupMenu menu = super.createPopupMenu( properties, copy, false, print, zoom );
-				menu.remove( 11 );
-				return menu;
-			}
-		};
-		chartPanel.setPreferredSize( new java.awt.Dimension( 500, 270 ) );
-		return chartPanel;
 	}
 
 	private static double[] ramp( final double min, final double max, final double timeInterval )
