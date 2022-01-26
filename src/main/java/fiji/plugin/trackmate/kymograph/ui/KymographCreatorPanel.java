@@ -50,6 +50,8 @@ public class KymographCreatorPanel extends JPanel
 
 	final JButton btnCreate;
 
+	final JButton btnLength;
+
 	final JButton btnClearOverlay;
 
 	final JButton btnImg;
@@ -63,6 +65,7 @@ public class KymographCreatorPanel extends JPanel
 	private final JComboBox< KymographProjectionMethod > cmbboxProjection;
 
 	private final JComboBox< KymographAlignment > cmbboxAlignment;
+
 
 	public KymographCreatorPanel( final TrackSelectorUI trackSelectorUI )
 	{
@@ -185,11 +188,15 @@ public class KymographCreatorPanel extends JPanel
 		panelButtons.setLayout( new BoxLayout( panelButtons, BoxLayout.X_AXIS ) );
 
 		btnClearOverlay = new JButton( "Clear overlay" );
+		btnLength = new JButton( "Length" );
 		btnCreate = new JButton( "Kymograph" );
 		btnImg = new JButton( "Registered image" );
 
 		panelButtons.add( btnClearOverlay );
 		panelButtons.add( Box.createHorizontalGlue() );
+
+		panelButtons.add( btnLength );
+		panelButtons.add( Box.createHorizontalStrut( 5 ) );
 		panelButtons.add( btnCreate );
 		panelButtons.add( Box.createHorizontalStrut( 5 ) );
 		panelButtons.add( btnImg );

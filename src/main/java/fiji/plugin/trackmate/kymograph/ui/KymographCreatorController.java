@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JDialog;
+import javax.swing.JFrame;
 
 import fiji.plugin.trackmate.Model;
 import fiji.plugin.trackmate.gui.Icons;
@@ -36,6 +37,7 @@ import ij.ImagePlus;
 import ij.gui.Overlay;
 import ij.gui.Roi;
 import ij.gui.RotatedRectRoi;
+import ij.measure.Calibration;
 
 public class KymographCreatorController
 {
@@ -76,10 +78,19 @@ public class KymographCreatorController
 			dialog.pack();
 
 			panel.btnCreate.addActionListener( e -> createKymograph( panel.getKymographCreationParams() ) );
+			panel.btnLength.addActionListener( e -> plotKymograhPlength( panel.getKymographCreationParams() ) );
 			panel.btnClearOverlay.addActionListener( e -> clearOverlay() );
 			panel.btnImg.addActionListener( e -> createRegisteredImage( panel.getKymographCreationParams() ) );
 		}
 		dialog.setVisible( true );
+	}
+
+	private void plotKymograhPlength( final KymographCreationParams params )
+	{
+		final Calibration cal = imp.getCalibration();
+		final JFrame frame = KymoLengthPlotter.plotKymographLength( model, params, cal.getUnit(), cal.getTimeUnit() );
+		frame.setLocationRelativeTo( dialog );
+		frame.setVisible( true );
 	}
 
 	private void addKymographOverlay( final KymographCreationParams params )
