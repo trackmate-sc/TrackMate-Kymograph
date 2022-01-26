@@ -248,7 +248,7 @@ public class KymographsAnalysis
 		return dataset;
 	}
 
-	private static final ChartPanel chart(
+	public static final ChartPanel chart(
 			final DefaultXYDataset dataset,
 			final String timeUnits,
 			final String ylabel,
